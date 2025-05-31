@@ -1,13 +1,13 @@
 pub mod frequency;
 
 #[derive(Debug)]
-enum frequency {
-    zero = -1,
-    special = 0,
-    annual = 1,
-    semiannual = 2,
-    triannual = 3,
-    quarterly = 4,
-    monthly=12,
-    continuous=99,
+enum Frequency {
+    Zero = -1,
+    Special = 0,
+    Annual = 1,
+    Semiannual = 2,
+    Triannual = 3,
+    Quarterly = 4,
+    Monthly=12,
+    Continuous=99,
 }
