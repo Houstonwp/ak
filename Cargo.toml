@@ -7,5 +7,5 @@ name = "ak"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+[workspace.dependencies]
 jiff = "0.2.14"

@@ -5,13 +5,13 @@ version = 4
 [[package]]
 name = "ak"
 version = "0.1.0"
-dependencies = [
- "jiff",
-]
 
 [[package]]
 name = "ak-core"
 version = "0.1.0"
+dependencies = [
+ "jiff",
+]
 
 [[package]]
 name = "jiff"
