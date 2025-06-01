@@ -13,6 +13,7 @@ impl DayCount for ISDA11 {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use jiff::civil::date;
