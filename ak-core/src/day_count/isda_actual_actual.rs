@@ -1,7 +1,7 @@
 use crate::day_count::DayCount;
 use jiff::civil::Date;
 
-struct ISDAActualActual;
+pub struct ISDAActualActual;
 
 impl DayCount for ISDAActualActual {
     fn year_diff(&self, start: Date, end: Date) -> f64 {

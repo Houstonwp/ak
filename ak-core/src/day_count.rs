@@ -11,7 +11,7 @@ mod psa_30_360_eom;
 mod sia_30_360_eom;
 mod sia_30_360_neom;
 
-trait DayCount {
+pub trait DayCount {
     fn year_diff(&self, start: Date, end: Date) -> f64;
     fn day_diff(&self, start: Date, end: Date) -> i64;
 }

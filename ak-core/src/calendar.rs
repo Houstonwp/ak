@@ -8,7 +8,7 @@ use std::collections::HashSet;
 // Weekends
 //
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Holiday {
+pub struct Holiday {
     pub name: String,
     pub id: String,
     pub date: Date, // ISO 8601 format
@@ -24,7 +24,8 @@ impl Holiday {
     }
 }
 
-struct PackedCalendar {
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct PackedCalendar {
     pub holidays: Vec<Holiday>,
     pub weekends: HashSet<Weekday>, // Set of days of the week that are considered weekends
 }
@@ -68,7 +69,8 @@ impl PackedCalendar {
     }
 }
 
-struct Calendar {
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Calendar {
     pub name: String,
     pub packed_calendar: PackedCalendar,
     pub business_days: HashMap<Date, bool>,

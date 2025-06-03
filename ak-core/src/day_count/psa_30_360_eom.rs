@@ -3,7 +3,7 @@ use std::cmp::max;
 use crate::day_count::DayCount;
 use jiff::civil::Date;
 
-struct PSA30360EOM;
+pub struct PSA30360EOM;
 
 impl DayCount for PSA30360EOM {
     fn year_diff(&self, start: Date, end: Date) -> f64 {
