@@ -1,5 +1,7 @@
 pub mod calendar;
+pub mod compounding;
 pub mod day_count;
+pub mod frequency;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
