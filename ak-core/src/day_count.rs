@@ -2,7 +2,6 @@ use jiff::civil::Date;
 mod actual_360;
 mod actual_36525;
 mod actual_365_fixed;
-mod bus_252;
 mod isda_1_1;
 mod isda_actual_actual;
 mod isma_30_360;
