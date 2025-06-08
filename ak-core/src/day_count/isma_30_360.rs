@@ -9,15 +9,9 @@ impl DayCount for ISMA30360 {
     }
 
     fn day_diff(&self, start: Date, end: Date) -> i64 {
-        let start_day = if start.day() == 31 { 30 } else { start.day() };
-        let end_day = if end.day() == 31 { 30 } else { end.day() };
-        let start_year = start.year();
-        let end_year = end.year();
-        let start_month = start.month();
-        let end_month = end.month();
-        (end_year - start_year) as i64 * 360
-            + (end_month - start_month) as i64 * 30
-            + (end_day - start_day) as i64
+        (end.year() - start.year()) as i64 * 360
+            + (end.month() - start.month()) as i64 * 30
+            + (end.day().clamp(1, 30) - start.day().clamp(1, 30)) as i64
     }
 }
 
