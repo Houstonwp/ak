@@ -1,11 +1,15 @@
 [workspace]
-members = ["ak-core"]
+members = [ "ak-cashflow","ak-core"]
 resolver = "3"
 
 [package]
 name = "ak"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+thiserror = "2.0.12"
 
 [workspace.dependencies]
 jiff = "0.2.14"
