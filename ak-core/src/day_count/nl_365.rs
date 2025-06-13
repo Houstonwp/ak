@@ -23,3 +23,66 @@ impl DayCount for NL365 {
         self.day_diff(start, end) as f64 / 365.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jiff::civil::date;
+
+    #[test]
+    fn test_year_diff() {
+        let dc = NL365;
+        let start = date(2020, 1, 1);
+        let end = date(2021, 1, 1);
+        assert_eq!(dc.year_diff(start, end), 1.0);
+    }
+
+    #[test]
+    fn test_day_diff() {
+        let dc = NL365;
+        let start = date(2020, 1, 1);
+        let end = date(2020, 1, 31);
+        assert_eq!(dc.day_diff(start, end), 30);
+    }
+
+    #[test]
+    fn test_day_diffs() {
+        let cases = vec![
+            (date(1992, 2, 1), date(1992, 3, 1), 34),
+            (date(1993, 1, 1), date(1993, 2, 21), 51),
+            (date(1993, 1, 15), date(1993, 2, 1), 17),
+            (date(1993, 2, 1), date(1993, 3, 1), 34),
+            (date(1993, 2, 15), date(1993, 4, 1), 51),
+            (date(1993, 3, 15), date(1993, 6, 15), 94),
+            (date(1993, 3, 31), date(1993, 4, 1), 1),
+            (date(1993, 3, 31), date(1993, 4, 30), 30),
+            (date(1993, 7, 15), date(1993, 9, 15), 62),
+            (date(1993, 12, 15), date(1993, 12, 30), 15),
+        ];
+        for (start, end, expected) in cases {
+            assert_eq!(NL365.day_diff(start, end), expected);
+        }
+    }
+
+    #[test]
+    fn test_year_diffs() {
+        let cases = vec![
+            (date(1992, 2, 1), date(1992, 3, 1), 34),
+            (date(1993, 1, 1), date(1993, 2, 21), 51),
+            (date(1993, 1, 15), date(1993, 2, 1), 17),
+            (date(1993, 2, 1), date(1993, 3, 1), 34),
+            (date(1993, 2, 15), date(1993, 4, 1), 51),
+            (date(1993, 3, 15), date(1993, 6, 15), 94),
+            (date(1993, 3, 31), date(1993, 4, 1), 1),
+            (date(1993, 3, 31), date(1993, 4, 30), 30),
+            (date(1993, 7, 15), date(1993, 9, 15), 62),
+            (date(1993, 12, 15), date(1993, 12, 30), 15),
+        ];
+        for (start, end, expected_days) in cases {
+            let expected = expected_days as f64 / 365.0;
+            let result = NL365.year_diff(start, end);
+            assert!((result - expected).abs() < 1e-10, "{} {}", result, expected);
+        }
+    }
+}
+
