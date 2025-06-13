@@ -5,5 +5,6 @@ pub enum Compounding {
     Simple,
     Compounded(Frequency),
     Continuous,
-    SimplteThenCompounded(Frequency),
+    /// Apply simple interest until a switch date and compound afterwards.
+    SimpleThenCompounded(Frequency),
 }
