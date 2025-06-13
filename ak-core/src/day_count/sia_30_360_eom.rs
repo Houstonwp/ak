@@ -32,3 +32,55 @@ impl DayCount for SIA30360EOM {
         self.day_diff(start, end) as f64 / 360.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jiff::civil::date;
+
+    #[test]
+    fn test_year_diff() {
+        let dc = SIA30360EOM;
+        let start = date(2020, 1, 31);
+        let end = date(2021, 1, 31);
+        assert_eq!(dc.year_diff(start, end), 1.0);
+    }
+
+    #[test]
+    fn test_day_diff() {
+        let dc = SIA30360EOM;
+        let start = date(2020, 1, 31);
+        let end = date(2021, 1, 31);
+        assert_eq!(dc.day_diff(start, end), 360);
+    }
+
+    #[test]
+    fn test_day_diffs() {
+        let cases = vec![
+            (date(1992, 2, 1), date(1992, 3, 1), 30),
+            (date(1993, 1, 1), date(1993, 2, 21), 50),
+            (date(1993, 1, 1), date(1994, 1, 1), 360),
+            (date(1993, 1, 15), date(1993, 2, 1), 16),
+            (date(1993, 2, 1), date(1993, 3, 1), 30),
+            (date(1993, 2, 15), date(1993, 4, 1), 46),
+            (date(1993, 3, 15), date(1993, 6, 15), 90),
+            (date(1993, 3, 31), date(1993, 4, 1), 1),
+            (date(1993, 3, 31), date(1993, 4, 30), 30),
+            (date(1993, 3, 31), date(1993, 12, 31), 270),
+            (date(1993, 7, 15), date(1993, 9, 15), 60),
+            (date(1993, 8, 21), date(1994, 4, 11), 230),
+            (date(1993, 11, 1), date(1994, 3, 1), 120),
+            (date(1993, 12, 15), date(1993, 12, 30), 15),
+            (date(1993, 12, 15), date(1993, 12, 31), 16),
+            (date(1993, 12, 31), date(1994, 2, 1), 31),
+            (date(1996, 1, 15), date(1996, 5, 31), 136),
+            (date(1998, 2, 27), date(1998, 3, 27), 30),
+            (date(1998, 2, 28), date(1998, 3, 27), 27),
+            (date(1999, 1, 1), date(1999, 1, 29), 28),
+        ];
+        for (start, end, expected) in cases {
+            assert_eq!(SIA30360EOM.day_diff(start, end), expected);
+        }
+    }
+}
+
