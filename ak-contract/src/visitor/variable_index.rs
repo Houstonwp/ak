@@ -38,3 +38,49 @@ impl Visitor for VariableIndexVisitor {
         // No action needed after visiting children
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::{walk_node, Node, ExprTree};
+
+    fn boxed(n: Node) -> ExprTree {
+        Box::new(n)
+    }
+
+    #[test]
+    fn empty_indexer_does_not_panic() {
+        let indexer = VariableIndexVisitor::new();
+        let names = indexer.get_variable_names();
+        assert!(names.is_empty());
+    }
+
+    #[test]
+    fn collects_single_variable() {
+        let expr = boxed(Node::Variable("x".into(), boxed(Node::Constant(1.0))));
+        let mut indexer = VariableIndexVisitor::new();
+        walk_node(&mut indexer, &expr);
+        assert_eq!(indexer.index.get("x"), Some(&0));
+        let names = indexer.get_variable_names();
+        assert!(names.contains(&"x".to_string()));
+    }
+
+    #[test]
+    fn collects_multiple_variables_without_duplicates() {
+        let expr = boxed(Node::Add(
+            boxed(Node::Variable("a".into(), boxed(Node::Constant(1.0)))),
+            boxed(Node::Variable(
+                "b".into(),
+                boxed(Node::Variable("a".into(), boxed(Node::Constant(2.0)))),
+            )),
+        ));
+
+        let mut indexer = VariableIndexVisitor::new();
+        walk_node(&mut indexer, &expr);
+        assert_eq!(indexer.index.get("a"), Some(&0));
+        assert_eq!(indexer.index.get("b"), Some(&1));
+        let names = indexer.get_variable_names();
+        assert!(names.contains(&"a".to_string()));
+        assert!(names.contains(&"b".to_string()));
+    }
+}
