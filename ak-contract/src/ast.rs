@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 
+use crate::visitor::Visitor;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     pub value: String,
-}
-
-pub trait Visitor {
-    /// Called on each node as you walk the tree.
-    fn visit(&mut self, node: &Node);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -65,7 +62,7 @@ impl From<HashMap<DateIndex, Event>> for Product {
 }
 pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
     // first, let the visitor process this node
-    visitor.visit(n);
+    visitor.pre_visit(n);
 
     // then recurse into any children
     match n {
@@ -113,11 +110,12 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
         // constants have no children, so nothing further to do
         Node::Constant(_) => {}
     }
+    visitor.post_visit(n);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ExprTree, Node, Name, Product, Visitor, walk_node};
+    use super::{ExprTree, Name, Node, Product, Visitor, walk_node};
     use std::collections::HashMap;
 
     struct Counter {
@@ -125,8 +123,11 @@ mod tests {
     }
 
     impl Visitor for Counter {
-        fn visit(&mut self, _node: &Node) {
+        fn pre_visit(&mut self, _node: &Node) {
             self.count += 1;
+        }
+        fn post_visit(&mut self, _node: &Node) {
+            // no action needed after visiting children
         }
     }
 
@@ -136,7 +137,10 @@ mod tests {
 
     #[test]
     fn walk_simple_add() {
-        let expr = boxed(Node::Add(boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0))));
+        let expr = boxed(Node::Add(
+            boxed(Node::Constant(1.0)),
+            boxed(Node::Constant(2.0)),
+        ));
         let mut v = Counter { count: 0 };
         walk_node(&mut v, &expr);
         assert_eq!(v.count, 3);
@@ -144,7 +148,11 @@ mod tests {
 
     #[test]
     fn walk_if_branch() {
-        let expr = boxed(Node::If(0, boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0))));
+        let expr = boxed(Node::If(
+            0,
+            boxed(Node::Constant(1.0)),
+            boxed(Node::Constant(2.0)),
+        ));
         let mut v = Counter { count: 0 };
         walk_node(&mut v, &expr);
         assert_eq!(v.count, 3);
@@ -154,7 +162,10 @@ mod tests {
     fn walk_variable() {
         let expr = boxed(Node::Variable(
             Name { value: "x".into() },
-            boxed(Node::Add(boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0)))),
+            boxed(Node::Add(
+                boxed(Node::Constant(1.0)),
+                boxed(Node::Constant(2.0)),
+            )),
         ));
         let mut v = Counter { count: 0 };
         walk_node(&mut v, &expr);
@@ -169,8 +180,12 @@ mod tests {
         let product = Product::from(map.clone());
         assert_eq!(product.event_dates.len(), 2);
         assert_eq!(product.events.len(), 2);
-        let reconstructed: HashMap<super::DateIndex, &super::Event> =
-            product.event_dates.iter().cloned().zip(product.events.iter()).collect();
+        let reconstructed: HashMap<super::DateIndex, &super::Event> = product
+            .event_dates
+            .iter()
+            .cloned()
+            .zip(product.events.iter())
+            .collect();
         for (k, v) in &map {
             let event = reconstructed.get(k).expect("missing event");
             assert_eq!(event.len(), v.len());

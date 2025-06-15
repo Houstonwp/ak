@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod contract;
 pub mod observable;
+pub mod visitor;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
