@@ -1,6 +1,7 @@
 use crate::ast::Node;
 
 pub mod debug;
+pub mod evaluator;
 pub mod variable_index;
 
 pub trait Visitor {
