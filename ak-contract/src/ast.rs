@@ -10,7 +10,7 @@ pub trait Visitor {
     fn visit(&mut self, node: &Node);
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Node {
     Uplus(ExprTree),
     Uminus(ExprTree),
@@ -112,5 +112,68 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
 
         // constants have no children, so nothing further to do
         Node::Constant(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ExprTree, Node, Name, Product, Visitor, walk_node};
+    use std::collections::HashMap;
+
+    struct Counter {
+        count: usize,
+    }
+
+    impl Visitor for Counter {
+        fn visit(&mut self, _node: &Node) {
+            self.count += 1;
+        }
+    }
+
+    fn boxed(n: Node) -> ExprTree {
+        Box::new(n)
+    }
+
+    #[test]
+    fn walk_simple_add() {
+        let expr = boxed(Node::Add(boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0))));
+        let mut v = Counter { count: 0 };
+        walk_node(&mut v, &expr);
+        assert_eq!(v.count, 3);
+    }
+
+    #[test]
+    fn walk_if_branch() {
+        let expr = boxed(Node::If(0, boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0))));
+        let mut v = Counter { count: 0 };
+        walk_node(&mut v, &expr);
+        assert_eq!(v.count, 3);
+    }
+
+    #[test]
+    fn walk_variable() {
+        let expr = boxed(Node::Variable(
+            Name { value: "x".into() },
+            boxed(Node::Add(boxed(Node::Constant(1.0)), boxed(Node::Constant(2.0)))),
+        ));
+        let mut v = Counter { count: 0 };
+        walk_node(&mut v, &expr);
+        assert_eq!(v.count, 4);
+    }
+
+    #[test]
+    fn product_from_hashmap() {
+        let mut map: HashMap<super::DateIndex, super::Event> = HashMap::new();
+        map.insert(1, vec![boxed(Node::Constant(1.0))]);
+        map.insert(2, vec![boxed(Node::Constant(2.0))]);
+        let product = Product::from(map.clone());
+        assert_eq!(product.event_dates.len(), 2);
+        assert_eq!(product.events.len(), 2);
+        let reconstructed: HashMap<super::DateIndex, &super::Event> =
+            product.event_dates.iter().cloned().zip(product.events.iter()).collect();
+        for (k, v) in &map {
+            let event = reconstructed.get(k).expect("missing event");
+            assert_eq!(event.len(), v.len());
+        }
     }
 }
