@@ -1,7 +1,7 @@
 use crate::{ast::Node, visitor::Visitor};
 use std::io::{self, Write};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DebugVisitor<W: Write> {
     depth: usize,
     pub(crate) writer: W,
@@ -40,7 +40,7 @@ impl<W: Write> Visitor for DebugVisitor<W> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{walk_node, Node};
+    use crate::ast::{Node, walk_node};
     use std::io::Cursor;
 
     fn boxed(n: Node) -> Box<Node> {
