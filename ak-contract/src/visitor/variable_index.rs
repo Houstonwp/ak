@@ -26,11 +26,24 @@ impl VariableIndexVisitor {
 
 impl Visitor for VariableIndexVisitor {
     fn pre_visit(&mut self, node: &Node) {
-        if let Node::Variable(ref name) | Node::Assign(ref name, _) = *node {
-            if !self.index.contains_key(name) {
-                let new_index = self.index.len();
-                self.index.insert(name.clone(), new_index);
+        match node {
+            Node::Variable(name, idx_cell) => {
+                let index = if let Some(&i) = self.index.get(name) {
+                    i
+                } else {
+                    let new_index = self.index.len();
+                    self.index.insert(name.clone(), new_index);
+                    new_index
+                };
+                idx_cell.set(Some(index));
             }
+            Node::Assign(name, _) => {
+                if !self.index.contains_key(name) {
+                    let new_index = self.index.len();
+                    self.index.insert(name.clone(), new_index);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -43,6 +56,7 @@ impl Visitor for VariableIndexVisitor {
 mod tests {
     use super::*;
     use crate::ast::{ExprTree, Node, walk_node};
+    use std::cell::Cell;
 
     fn boxed(n: Node) -> ExprTree {
         Box::new(n)
@@ -66,10 +80,23 @@ mod tests {
     }
 
     #[test]
+    fn populates_variable_index() {
+        let expr = boxed(Node::Variable("x".into(), Cell::new(None)));
+        let mut indexer = VariableIndexVisitor::new();
+        walk_node(&mut indexer, &expr);
+        assert_eq!(indexer.index.get("x"), Some(&0));
+        if let Node::Variable(_, ref cell) = *expr {
+            assert_eq!(cell.get(), Some(0));
+        } else {
+            panic!("expected variable node");
+        }
+    }
+
+    #[test]
     fn collects_multiple_variables_without_duplicates() {
         let expr = boxed(Node::Add(
             boxed(Node::Assign("a".into(), boxed(Node::Constant(1.0)))),
-            boxed(Node::Assign("b".into(), boxed(Node::Variable("a".into())))),
+            boxed(Node::Assign("b".into(), boxed(Node::Variable("a".into(), Cell::new(None))))),
         ));
 
         let mut indexer = VariableIndexVisitor::new();
