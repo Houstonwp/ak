@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::cell::Cell;
 
 use crate::visitor::{Visitor, variable_index::VariableIndexVisitor};
 
@@ -27,7 +28,8 @@ pub enum Node {
     Spot(ExprTree),
     If(isize, ExprTree, ExprTree),
     Constant(f64),
-    Variable(String),
+    /// Holds the variable name and an optional index assigned during preprocessing.
+    Variable(String, Cell<Option<usize>>),
 }
 
 pub type DateIndex = i32;
@@ -145,7 +147,7 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
             walk_node(visitor, expr);
         }
 
-        Node::Variable(_) => {}
+        Node::Variable(_, _) => {}
         // constants have no children, so nothing further to do
         Node::Constant(_) => {}
     }
