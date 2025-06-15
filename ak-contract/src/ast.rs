@@ -30,7 +30,7 @@ pub enum Node {
     Variable(String, Box<Node>),
 }
 
-pub type DateIndex = isize;
+pub type DateIndex = i32;
 pub type ExprTree = Box<Node>;
 pub type Statement = ExprTree;
 pub type Event = Vec<Statement>;
