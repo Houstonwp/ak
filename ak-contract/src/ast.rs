@@ -23,11 +23,11 @@ pub enum Node {
     InferiorEqual(ExprTree, ExprTree),
     And(ExprTree, ExprTree),
     Or(ExprTree, ExprTree),
-    Assign(ExprTree, ExprTree),
+    Assign(String, ExprTree),
     Spot(ExprTree),
     If(isize, ExprTree, ExprTree),
     Constant(f64),
-    Variable(String, Box<Node>),
+    Variable(String),
 }
 
 pub type DateIndex = i32;
@@ -129,8 +129,7 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
         | Node::Inferior(l, r)
         | Node::InferiorEqual(l, r)
         | Node::And(l, r)
-        | Node::Or(l, r)
-        | Node::Assign(l, r) => {
+        | Node::Or(l, r) => {
             walk_node(visitor, l);
             walk_node(visitor, r);
         }
@@ -142,10 +141,11 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
         }
 
         // variables carry a subtree too
-        Node::Variable(_, expr) => {
+        Node::Assign(_, expr) => {
             walk_node(visitor, expr);
         }
 
+        Node::Variable(_) => {}
         // constants have no children, so nothing further to do
         Node::Constant(_) => {}
     }
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn walk_variable() {
-        let expr = boxed(Node::Variable(
+        let expr = boxed(Node::Assign(
             "x".into(),
             boxed(Node::Add(
                 boxed(Node::Constant(1.0)),

@@ -26,7 +26,7 @@ impl VariableIndexVisitor {
 
 impl Visitor for VariableIndexVisitor {
     fn pre_visit(&mut self, node: &Node) {
-        if let Node::Variable(ref name, _) = *node {
+        if let Node::Variable(ref name) | Node::Assign(ref name, _) = *node {
             if !self.index.contains_key(name) {
                 let new_index = self.index.len();
                 self.index.insert(name.clone(), new_index);
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn collects_single_variable() {
-        let expr = boxed(Node::Variable("x".into(), boxed(Node::Constant(1.0))));
+        let expr = boxed(Node::Assign("x".into(), boxed(Node::Constant(1.0))));
         let mut indexer = VariableIndexVisitor::new();
         walk_node(&mut indexer, &expr);
         assert_eq!(indexer.index.get("x"), Some(&0));
@@ -68,11 +68,8 @@ mod tests {
     #[test]
     fn collects_multiple_variables_without_duplicates() {
         let expr = boxed(Node::Add(
-            boxed(Node::Variable("a".into(), boxed(Node::Constant(1.0)))),
-            boxed(Node::Variable(
-                "b".into(),
-                boxed(Node::Variable("a".into(), boxed(Node::Constant(2.0)))),
-            )),
+            boxed(Node::Assign("a".into(), boxed(Node::Constant(1.0)))),
+            boxed(Node::Assign("b".into(), boxed(Node::Variable("a".into())))),
         ));
 
         let mut indexer = VariableIndexVisitor::new();
