@@ -1,5 +1,5 @@
 [workspace]
-members = [ "ak-cashflow","ak-core"]
+members = [ "ak-cashflow", "ak-contract","ak-core"]
 resolver = "3"
 
 [package]
