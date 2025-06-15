@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::visitor::Visitor;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Name {
     pub value: String,
 }
