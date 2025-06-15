@@ -16,9 +16,9 @@ impl VariableIndexVisitor {
     }
 
     pub fn get_variable_names(self) -> Vec<String> {
-        let mut vector: Vec<String> = Vec::with_capacity(self.index.len());
+        let mut vector = vec![String::new(); self.index.len()];
         for (name, index) in self.index {
-            vector[index] = name;
+            vector.insert(index, name);
         }
         vector
     }
