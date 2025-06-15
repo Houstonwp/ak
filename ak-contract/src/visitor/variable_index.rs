@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::ast::{Name, Node};
+use crate::ast::Node;
 use crate::visitor::Visitor;
 
 #[derive(Debug, Default, Clone)]
 pub struct VariableIndexVisitor {
-    pub index: HashMap<Name, usize>,
+    pub index: HashMap<String, usize>,
 }
 
 impl VariableIndexVisitor {
@@ -13,6 +13,10 @@ impl VariableIndexVisitor {
         VariableIndexVisitor {
             index: HashMap::new(),
         }
+    }
+
+    pub fn get_variable_names(self) -> Vec<String> {
+        self.index.keys().cloned().collect()
     }
 }
 

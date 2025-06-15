@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 
-use crate::visitor::Visitor;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Name {
-    pub value: String,
-}
+use crate::visitor::{Visitor, variable_index::VariableIndexVisitor};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Node {
@@ -32,7 +27,7 @@ pub enum Node {
     Spot(ExprTree),
     If(isize, ExprTree, ExprTree),
     Constant(f64),
-    Variable(Name, Box<Node>),
+    Variable(String, Box<Node>),
 }
 
 pub type DateIndex = isize;
@@ -40,26 +35,70 @@ pub type ExprTree = Box<Node>;
 pub type Statement = ExprTree;
 pub type Event = Vec<Statement>;
 
+#[derive(Clone, Debug, Default)]
 pub struct Product {
     pub event_dates: Vec<DateIndex>,
     pub events: Vec<Event>,
+    pub variable_names: Vec<String>,
 }
-impl From<HashMap<DateIndex, Event>> for Product {
-    fn from(events: HashMap<DateIndex, Event>) -> Self {
-        let mut event_dates = Vec::with_capacity(events.len());
-        let mut events_vec = Vec::with_capacity(events.len());
 
-        for (date, event) in events {
+impl Product {
+    pub fn new() -> Self {
+        Product {
+            event_dates: Vec::new(),
+            events: Vec::new(),
+            variable_names: Vec::new(),
+        }
+    }
+
+    pub fn add_event(&mut self, date: DateIndex, event: Event) {
+        self.event_dates.push(date);
+        self.events.push(event);
+    }
+
+    pub fn add_variable_name(&mut self, name: String) {
+        self.variable_names.push(name);
+    }
+
+    pub fn visit(&mut self, visitor: &mut impl Visitor) {
+        for event in &self.events {
+            for statement in event {
+                walk_node(visitor, statement);
+            }
+        }
+    }
+
+    pub fn index_variables(&mut self) {
+        let mut indexer = VariableIndexVisitor::new();
+        self.visit(&mut indexer);
+        self.variable_names = indexer.get_variable_names();
+    }
+
+    pub fn preprocess(&mut self) {
+        // This method can be used to perform any preprocessing needed on the product.
+        // For example, it could index variables or perform other transformations.
+        self.index_variables();
+    }
+}
+
+impl From<HashMap<DateIndex, Event>> for Product {
+    fn from(event_map: HashMap<DateIndex, Event>) -> Self {
+        let mut event_dates = Vec::with_capacity(event_map.len());
+        let mut events = Vec::with_capacity(event_map.len());
+
+        for (date, event) in event_map {
             event_dates.push(date);
-            events_vec.push(event);
+            events.push(event);
         }
 
         Product {
             event_dates,
-            events: events_vec,
+            events,
+            ..Default::default()
         }
     }
 }
+
 pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
     // first, let the visitor process this node
     visitor.pre_visit(n);
@@ -115,7 +154,7 @@ pub fn walk_node(visitor: &mut impl Visitor, n: &Node) {
 
 #[cfg(test)]
 mod tests {
-    use super::{ExprTree, Name, Node, Product, Visitor, walk_node};
+    use super::{ExprTree, Node, Product, Visitor, walk_node};
     use std::collections::HashMap;
 
     struct Counter {
@@ -161,7 +200,7 @@ mod tests {
     #[test]
     fn walk_variable() {
         let expr = boxed(Node::Variable(
-            Name { value: "x".into() },
+            "x".into(),
             boxed(Node::Add(
                 boxed(Node::Constant(1.0)),
                 boxed(Node::Constant(2.0)),
