@@ -15,7 +15,7 @@ impl VariableIndexVisitor {
         }
     }
 
-    pub fn get_variable_names(self) -> Vec<String> {
+    pub fn variable_names(self) -> Vec<String> {
         let mut vector = vec![String::new(); self.index.len()];
         for (name, index) in self.index {
             vector.insert(index, name);
@@ -42,7 +42,7 @@ impl Visitor for VariableIndexVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{walk_node, Node, ExprTree};
+    use crate::ast::{ExprTree, Node, walk_node};
 
     fn boxed(n: Node) -> ExprTree {
         Box::new(n)
@@ -51,7 +51,7 @@ mod tests {
     #[test]
     fn empty_indexer_does_not_panic() {
         let indexer = VariableIndexVisitor::new();
-        let names = indexer.get_variable_names();
+        let names = indexer.variable_names();
         assert!(names.is_empty());
     }
 
@@ -61,7 +61,7 @@ mod tests {
         let mut indexer = VariableIndexVisitor::new();
         walk_node(&mut indexer, &expr);
         assert_eq!(indexer.index.get("x"), Some(&0));
-        let names = indexer.get_variable_names();
+        let names = indexer.variable_names();
         assert!(names.contains(&"x".to_string()));
     }
 
@@ -79,7 +79,7 @@ mod tests {
         walk_node(&mut indexer, &expr);
         assert_eq!(indexer.index.get("a"), Some(&0));
         assert_eq!(indexer.index.get("b"), Some(&1));
-        let names = indexer.get_variable_names();
+        let names = indexer.variable_names();
         assert!(names.contains(&"a".to_string()));
         assert!(names.contains(&"b".to_string()));
     }

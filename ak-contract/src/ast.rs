@@ -71,7 +71,7 @@ impl Product {
     pub fn index_variables(&mut self) {
         let mut indexer = VariableIndexVisitor::new();
         self.visit(&mut indexer);
-        self.variable_names = indexer.get_variable_names();
+        self.variable_names = indexer.variable_names();
     }
 
     pub fn preprocess(&mut self) {
