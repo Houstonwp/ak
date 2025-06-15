@@ -1,10 +1,19 @@
 use crate::{ast::Node, visitor::Visitor};
 use std::io::{self, Write};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct DebugVisitor<W: Write> {
     depth: usize,
-    pub(crate) writer: W,
+    writer: W,
+}
+
+impl<W: Write + Default> Default for DebugVisitor<W> {
+    fn default() -> Self {
+        Self {
+            depth: 0,
+            writer: W::default(),
+        }
+    }
 }
 
 impl DebugVisitor<std::io::Stdout> {
@@ -19,6 +28,10 @@ impl DebugVisitor<std::io::Stdout> {
 impl<W: Write> DebugVisitor<W> {
     pub fn with_writer(writer: W) -> Self {
         DebugVisitor { depth: 0, writer }
+    }
+
+    pub fn into_inner(self) -> W {
+        self.writer
     }
 }
 
@@ -51,7 +64,7 @@ mod tests {
         let cursor = Cursor::new(Vec::new());
         let mut v = DebugVisitor::with_writer(cursor);
         walk_node(&mut v, expr);
-        let cursor = v.writer;
+        let cursor = v.into_inner();
         String::from_utf8(cursor.into_inner()).unwrap()
     }
 
