@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 
 use crate::ast::{ExprTree, Node};
 
@@ -28,10 +28,10 @@ enum Token {
 }
 
 fn tokenize(input: &str) -> Result<Vec<Token>> {
-    let mut chars = input.chars().peekable();
+    let mut chars = input.chars().enumerate().peekable();
     let mut tokens = Vec::new();
 
-    while let Some(&c) = chars.peek() {
+    while let Some(&(idx, c)) = chars.peek() {
         if c.is_whitespace() {
             chars.next();
             continue;
@@ -39,7 +39,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
         match c {
             '0'..='9' | '.' => {
                 let mut num = String::new();
-                while let Some(&d) = chars.peek() {
+                while let Some(&(_, d)) = chars.peek() {
                     if d.is_ascii_digit() || d == '.' {
                         num.push(d);
                         chars.next();
@@ -47,12 +47,14 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
                         break;
                     }
                 }
-                let value: f64 = num.parse()?;
+                let value: f64 = num
+                    .parse()
+                    .with_context(|| format!("parsing number '{}' at {}", num, idx))?;
                 tokens.push(Token::Number(value));
             }
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut ident = String::new();
-                while let Some(&d) = chars.peek() {
+                while let Some(&(_, d)) = chars.peek() {
                     if d.is_alphanumeric() || d == '_' {
                         ident.push(d);
                         chars.next();
@@ -96,7 +98,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
             }
             '=' => {
                 chars.next();
-                if let Some('=') = chars.peek() {
+                if let Some(&(_, '=')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::EqualEqual);
                 } else {
@@ -105,16 +107,16 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
             }
             '!' => {
                 chars.next();
-                if let Some('=') = chars.peek() {
+                if let Some(&(_, '=')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::BangEqual);
                 } else {
-                    bail!("Unexpected '!'");
+                    bail!("Unexpected '!' at position {}", idx);
                 }
             }
             '>' => {
                 chars.next();
-                if let Some('=') = chars.peek() {
+                if let Some(&(_, '=')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::GreaterEqual);
                 } else {
@@ -123,7 +125,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
             }
             '<' => {
                 chars.next();
-                if let Some('=') = chars.peek() {
+                if let Some(&(_, '=')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::LessEqual);
                 } else {
@@ -132,23 +134,23 @@ fn tokenize(input: &str) -> Result<Vec<Token>> {
             }
             '&' => {
                 chars.next();
-                if let Some('&') = chars.peek() {
+                if let Some(&(_, '&')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::AndAnd);
                 } else {
-                    bail!("Unexpected '&'");
+                    bail!("Unexpected '&' at position {}", idx);
                 }
             }
             '|' => {
                 chars.next();
-                if let Some('|') = chars.peek() {
+                if let Some(&(_, '|')) = chars.peek() {
                     chars.next();
                     tokens.push(Token::OrOr);
                 } else {
-                    bail!("Unexpected '|'");
+                    bail!("Unexpected '|' at position {}", idx);
                 }
             }
-            _ => bail!("Unexpected character: {}", c),
+            _ => bail!("Unexpected character: {} at position {}", c, idx),
         }
     }
 
@@ -180,18 +182,25 @@ impl Parser {
     }
 
     fn expect(&mut self, token: Token) -> Result<()> {
-        let t = self.advance().ok_or_else(|| anyhow::anyhow!("unexpected end"))?;
+        let t = self
+            .advance()
+            .with_context(|| format!("expected {:?}, found end of input", token))?;
         if t == token {
             Ok(())
         } else {
-            bail!("expected {:?}, found {:?}", token, t);
+            bail!(
+                "expected {:?}, found {:?} at token {}",
+                token,
+                t,
+                self.pos - 1
+            );
         }
     }
 
     fn parse(&mut self) -> Result<ExprTree> {
         let expr = self.parse_assignment()?;
         if self.pos != self.tokens.len() {
-            bail!("Unexpected tokens remaining");
+            bail!("Unexpected tokens remaining starting at position {}", self.pos);
         }
         Ok(expr)
     }
@@ -401,7 +410,11 @@ impl Parser {
                 self.expect(Token::RParen)?;
                 Ok(expr)
             }
-            _ => bail!("Unexpected token: {:?}", self.peek()),
+            _ => bail!(
+                "Unexpected token: {:?} at position {}",
+                self.peek(),
+                self.pos
+            ),
         }
     }
 }
