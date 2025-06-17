@@ -1,15 +1,13 @@
 [workspace]
-members = [ "ak-cashflow", "ak-contract","ak-core"]
+members = [
+    "ak-core",
+    "ak-contract",
+    "ak-cashflow",
+    "ak-repl",
+    "ak-cli",
+]
 resolver = "3"
-
-[package]
-name = "ak"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-anyhow = "1.0.98"
-thiserror = "2.0.12"
 
 [workspace.dependencies]
 jiff = "0.2.14"
+anyhow = "1.0.98"
