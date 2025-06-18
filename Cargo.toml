@@ -4,7 +4,7 @@ members = [
     "ak-contract",
     "ak-cashflow",
     "ak-repl",
-    "ak-cli",
+    "ak-cli", "ak-random",
 ]
 resolver = "3"
 
