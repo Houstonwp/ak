@@ -34,6 +34,9 @@ dependencies = [
 [[package]]
 name = "ak-random"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "ak-repl"

@@ -1,5 +1,7 @@
 // Beasley-Springer-Moro algorithm for approximating the inverse normal.
-pub fn approx_inverse_gaussian(u: f64) -> f64 {
+use anyhow::{bail, Result};
+
+pub fn approx_inverse_gaussian(u: f64) -> Result<f64> {
     // Constants for the approximation
     const A0: f64 = 2.50662823884;
     const A1: f64 = -18.61500062529;
@@ -22,13 +24,14 @@ pub fn approx_inverse_gaussian(u: f64) -> f64 {
     const C8: f64 = 0.0000003960315187;
 
     if u <= 0.0 || u >= 1.0 {
-        panic!("Input must be in the range (0, 1)");
+        bail!("Input must be in the range (0, 1)");
     }
 
     let y = u - 0.5;
     if y.abs() < 0.42 {
         let r = y * y;
-        (A0 + y * (A1 + r * (A2 + r * A3))) / (1.0 + r * (B0 + r * (B1 + r * (B2 + r * B3))))
+        Ok((A0 + y * (A1 + r * (A2 + r * A3)))
+            / (1.0 + r * (B0 + r * (B1 + r * (B2 + r * B3)))))
     } else {
         let mut r = u;
         if y > 0.0 {
@@ -37,7 +40,7 @@ pub fn approx_inverse_gaussian(u: f64) -> f64 {
         r = (-1.0 * r.ln()).ln();
         let x = C0
             + r * (C1 + r * (C2 + r * (C3 + r * (C4 + r * (C5 + r * (C6 + r * (C7 + r * C8)))))));
-        if y < 0.0 { -x } else { x }
+        Ok(if y < 0.0 { -x } else { x })
     }
 }
 
@@ -54,7 +57,7 @@ mod tests {
         ];
 
         for (input, &expected) in inputs.iter().zip(expected_outputs.iter()) {
-            let result = approx_inverse_gaussian(*input);
+            let result = approx_inverse_gaussian(*input).expect("valid input");
             assert!(
                 (result - expected).abs() < 1e-6,
                 "Failed for input: {}",
