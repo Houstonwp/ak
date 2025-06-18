@@ -1,3 +1,5 @@
+pub mod gaussian;
+
 pub trait RNG: Clone {
     fn init(&mut self, dimensions: usize);
     fn next_uniform(&mut self, v: &mut Vec<f64>);
