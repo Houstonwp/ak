@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
+use ak_contract::VERSION;
 use ak_contract::ast::{self, Node};
 use ak_contract::parser::parse_expression;
 use ak_contract::visitor::Visitor;
@@ -13,7 +14,11 @@ struct ReplEvaluator<'a> {
 
 impl<'a> ReplEvaluator<'a> {
     fn new(env: &'a mut HashMap<String, f64>) -> Self {
-        Self { env, float_stack: Vec::new(), bool_stack: Vec::new() }
+        Self {
+            env,
+            float_stack: Vec::new(),
+            bool_stack: Vec::new(),
+        }
     }
 }
 
@@ -24,10 +29,14 @@ impl<'a> Visitor for ReplEvaluator<'a> {
         match node {
             Node::Constant(v) => self.float_stack.push(*v),
             Node::Uplus(_) => {
-                if let Some(v) = self.float_stack.pop() { self.float_stack.push(v); }
+                if let Some(v) = self.float_stack.pop() {
+                    self.float_stack.push(v);
+                }
             }
             Node::Uminus(_) => {
-                if let Some(v) = self.float_stack.pop() { self.float_stack.push(-v); }
+                if let Some(v) = self.float_stack.pop() {
+                    self.float_stack.push(-v);
+                }
             }
             Node::Add(_, _) => {
                 if let (Some(r), Some(l)) = (self.float_stack.pop(), self.float_stack.pop()) {
@@ -55,10 +64,14 @@ impl<'a> Visitor for ReplEvaluator<'a> {
                 }
             }
             Node::Log(_) => {
-                if let Some(v) = self.float_stack.pop() { self.float_stack.push(v.ln()); }
+                if let Some(v) = self.float_stack.pop() {
+                    self.float_stack.push(v.ln());
+                }
             }
             Node::Sqrt(_) => {
-                if let Some(v) = self.float_stack.pop() { self.float_stack.push(v.sqrt()); }
+                if let Some(v) = self.float_stack.pop() {
+                    self.float_stack.push(v.sqrt());
+                }
             }
             Node::Max(_, _) => {
                 if let (Some(r), Some(l)) = (self.float_stack.pop(), self.float_stack.pop()) {
@@ -138,13 +151,34 @@ fn main() {
     let mut env: HashMap<String, f64> = HashMap::new();
     let stdin = io::stdin();
     loop {
+        println!(
+            r#"
+        _    
+       | |   
+   __ _| | __
+  / _` | |/ /
+ | (_| |   < 
+  \__,_|_|\_\          
+"#
+        );
+        println!(
+            "ak-repl v{} (using ak-contract v{})",
+            env!("CARGO_PKG_VERSION"),
+            VERSION
+        );
         print!("> ");
         io::stdout().flush().unwrap();
         let mut input = String::new();
-        if stdin.read_line(&mut input).unwrap() == 0 { break; }
+        if stdin.read_line(&mut input).unwrap() == 0 {
+            break;
+        }
         let line = input.trim();
-        if line.is_empty() { continue; }
-        if line == "exit" || line == "quit" { break; }
+        if line.is_empty() {
+            continue;
+        }
+        if line == "exit" || line == "quit" {
+            break;
+        }
         match parse_expression(line) {
             Ok(expr) => {
                 let mut evaluator = ReplEvaluator::new(&mut env);
@@ -159,4 +193,3 @@ fn main() {
         }
     }
 }
-
