@@ -40,15 +40,15 @@ pub struct Mrg32k3aCore {
 }
 
 impl Mrg32k3aCore {
-    pub const M1: u64 = 4_294_967_087;
-    pub const M2: u64 = 4_294_944_443;
-    pub const A12: u64 = 1_403_580;
-    pub const A13: u64 = 810_728;
-    pub const A21: u64 = 527_612;
-    pub const A23: u64 = 1_370_589;
-    pub const CORR1: u64 = Self::M1 * Self::A13;
-    pub const CORR2: u64 = Self::M2 * Self::A23;
-    pub const NORM: f64 = f64::from_bits(0x3DF0_0000_0D00_000B);
+    const M1: u64 = 4_294_967_087;
+    const M2: u64 = 4_294_944_443;
+    const A12: u64 = 1_403_580;
+    const A13: u64 = 810_728;
+    const A21: u64 = 527_612;
+    const A23: u64 = 1_370_589;
+    const CORR1: u64 = Self::M1 * Self::A13;
+    const CORR2: u64 = Self::M2 * Self::A23;
+    const NORM: f64 = f64::from_bits(0x3DF0_0000_0D00_000B);
 
     #[inline]
     pub fn stafford_mix_13(z: u64) -> u64 {
@@ -123,7 +123,7 @@ impl Mrg32k3aCore {
     }
 
     #[inline]
-    pub fn step(&mut self) -> f64 {
+    pub fn next_f64(&mut self) -> f64 {
         self.step_u64() as f64 * Self::NORM
     }
 
@@ -177,19 +177,19 @@ impl BlockRngCore for Mrg32k3aCore {
 }
 
 impl SeedableRng for Mrg32k3aCore {
-    type Seed = [u8; 32];
+    type Seed = [u8; 8];
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut rng = Self::default();
-        let seed_u64 = u64::from_le_bytes(seed[0..8].try_into().unwrap());
+        let seed_u64 = u64::from_le_bytes(seed);
         rng.set_seed(seed_u64);
         rng
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Mrg32k3a {
-    pub core: BlockRng64<Mrg32k3aCore>,
+    core: BlockRng64<Mrg32k3aCore>,
 }
 
 impl rand_core::RngCore for Mrg32k3a {
@@ -216,6 +216,33 @@ impl SeedableRng for Mrg32k3a {
         Self {
             core: BlockRng64::from_seed(seed),
         }
+    }
+}
+
+impl Default for Mrg32k3a {
+    fn default() -> Self {
+        Self {
+            core: BlockRng64::new(Mrg32k3aCore::default()),
+        }
+    }
+}
+
+impl Mrg32k3a {
+    /// Construct a new generator and seed it using a 64-bit value.
+    pub fn new(seed: u64) -> Self {
+        let mut core = Mrg32k3aCore::default();
+        core.set_seed(seed);
+        Self {
+            core: BlockRng64::new(core),
+        }
+    }
+
+    pub fn core(&self) -> &BlockRng64<Mrg32k3aCore> {
+        &self.core
+    }
+
+    pub fn core_mut(&mut self) -> &mut BlockRng64<Mrg32k3aCore> {
+        &mut self.core
     }
 }
 
