@@ -6,3 +6,11 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 rand_core = { version = "0.9.3", features = ["std"] }
+
+[dev-dependencies]
+criterion = "0.5"
+rand = "0.8"
+
+[[bench]]
+name = "rng_bench"
+harness = false

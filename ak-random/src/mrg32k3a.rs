@@ -1,6 +1,5 @@
 use rand_core::{
     SeedableRng,
-    RngCore,
     block::{BlockRng64, BlockRngCore},
 };
 
@@ -215,6 +214,7 @@ impl Mrg32k3a {
 mod tests {
     use super::*;
     use std::thread;
+    use rand_core::RngCore;
 
     #[test]
     fn sequence_from_default_seed() {
