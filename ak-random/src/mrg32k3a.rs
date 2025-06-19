@@ -1,7 +1,9 @@
 use rand_core::{
-    SeedableRng,
+    RngCore, SeedableRng,
     block::{BlockRng64, BlockRngCore},
 };
+
+use crate::rng::RNG;
 
 pub const N: usize = 16;
 
@@ -190,6 +192,9 @@ impl SeedableRng for Mrg32k3aCore {
 #[derive(Clone, Debug)]
 pub struct Mrg32k3a {
     core: BlockRng64<Mrg32k3aCore>,
+    antithetic: bool,
+    cached_uniform: Vec<f64>,
+    cached_gaussian: Vec<f64>,
 }
 
 impl rand_core::RngCore for Mrg32k3a {
@@ -215,6 +220,9 @@ impl SeedableRng for Mrg32k3a {
     fn from_seed(seed: Self::Seed) -> Self {
         Self {
             core: BlockRng64::from_seed(seed),
+            antithetic: false,
+            cached_uniform: Vec::new(),
+            cached_gaussian: Vec::new(),
         }
     }
 }
@@ -223,17 +231,23 @@ impl Default for Mrg32k3a {
     fn default() -> Self {
         Self {
             core: BlockRng64::new(Mrg32k3aCore::default()),
+            antithetic: false,
+            cached_uniform: Vec::new(),
+            cached_gaussian: Vec::new(),
         }
     }
 }
 
 impl Mrg32k3a {
     /// Construct a new generator and seed it using a 64-bit value.
-    pub fn new(seed: u64) -> Self {
+    pub fn new(seed: u64, dimensions: usize) -> Self {
         let mut core = Mrg32k3aCore::default();
         core.set_seed(seed);
         Self {
             core: BlockRng64::new(core),
+            antithetic: false,
+            cached_uniform: Vec::with_capacity(dimensions),
+            cached_gaussian: Vec::with_capacity(dimensions),
         }
     }
 
@@ -244,9 +258,7 @@ impl Mrg32k3a {
     pub fn core_mut(&mut self) -> &mut BlockRng64<Mrg32k3aCore> {
         &mut self.core
     }
-}
 
-impl Mrg32k3a {
     pub fn advance_substreams(&mut self, n: u64) {
         self.core.core.advance_substreams(n);
     }
@@ -266,24 +278,69 @@ impl Mrg32k3a {
     pub fn set_stream(&mut self, n: u64) {
         self.core.core.set_stream(n);
     }
+
+    pub fn set_antithetic(&mut self, enable: bool) {
+        self.antithetic = enable;
+    }
+
+    pub fn set_uniform_cache(&mut self, cache: Vec<f64>) {
+        self.cached_uniform = cache;
+    }
+
+    pub fn set_gaussian_cache(&mut self, cache: Vec<f64>) {
+        self.cached_gaussian = cache;
+    }
 }
 
-use crate::rng::RNG;
-use rand_core::RngCore;
-
 impl RNG for Mrg32k3a {
-    fn init(&mut self, _dimensions: usize) {}
+    fn init(&mut self, dimensions: usize) {
+        self.cached_uniform = Vec::with_capacity(dimensions);
+        self.cached_gaussian = Vec::with_capacity(dimensions);
+    }
+
+    fn generate_uniform(&mut self, output: &mut [f64]) {
+        if self.antithetic {
+            for (val, cached) in output.iter_mut().zip(self.cached_uniform.iter()) {
+                *val = 1.0 - cached;
+            }
+            self.antithetic = false;
+        } else {
+            self.cached_uniform.clear();
+            for val in output {
+                let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
+                if u >= 1.0 {
+                    u = 1.0 - f64::EPSILON;
+                }
+                if u <= 0.0 {
+                    u = f64::MIN_POSITIVE;
+                }
+                *val = u;
+                self.cached_uniform.push(*val);
+            }
+            self.antithetic = true;
+        }
+    }
 
     fn generate_gaussian(&mut self, output: &mut [f64]) {
-        for val in output {
-            let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
-            if u >= 1.0 {
-                u = 1.0 - f64::EPSILON;
+        if self.antithetic {
+            for (val, cached) in output.iter_mut().zip(self.cached_gaussian.iter()) {
+                *val = -cached;
             }
-            if u <= 0.0 {
-                u = f64::MIN_POSITIVE;
+            self.antithetic = false;
+        } else {
+            self.cached_gaussian.clear();
+            for val in output {
+                let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
+                if u >= 1.0 {
+                    u = 1.0 - f64::EPSILON;
+                }
+                if u <= 0.0 {
+                    u = f64::MIN_POSITIVE;
+                }
+                *val = crate::gaussian::approx_inverse_gaussian(u).unwrap();
+                self.cached_gaussian.push(*val);
             }
-            *val = crate::gaussian::approx_inverse_gaussian(u).unwrap();
+            self.antithetic = true;
         }
     }
 
@@ -291,7 +348,6 @@ impl RNG for Mrg32k3a {
         self.core.core.set_stream(stream);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -340,6 +396,7 @@ mod tests {
         let mut core = Mrg32k3aCore::default();
         let mut rng = Mrg32k3a {
             core: BlockRng64::new(Mrg32k3aCore::default()),
+            ..Default::default()
         };
         for _ in 0..N * 2 {
             assert_eq!(rng.next_u64(), core.step_u64());
@@ -417,4 +474,3 @@ mod tests {
         }
     }
 }
-

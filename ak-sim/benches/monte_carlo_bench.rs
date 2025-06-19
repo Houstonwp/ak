@@ -59,8 +59,8 @@ fn sequential_simulate(prd: &DummyProduct, mdl: &DummyModel, rng: &Mrg32k3a, pat
 fn bench_monte_carlo(c: &mut Criterion) {
     let prd = DummyProduct;
     let mdl = DummyModel;
-    let rng = Mrg32k3a::default();
     let paths = 1024;
+    let rng = Mrg32k3a::new(12345, paths);
 
     c.bench_function("sequential", |b| {
         b.iter(|| sequential_simulate(&prd, &mdl, &rng, paths))

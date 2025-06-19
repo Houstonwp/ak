@@ -76,8 +76,8 @@ mod tests {
     fn parallel_matches_sequential() {
         let prd = DummyProduct;
         let mdl = DummyModel;
-        let rng = Mrg32k3a::default();
         let paths = 16;
+        let rng = Mrg32k3a::new(12345, paths);
 
         // Sequential reference using per-path streams
         let mut expected = Vec::new();
