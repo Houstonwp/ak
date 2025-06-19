@@ -19,6 +19,10 @@ impl Scenario {
     pub fn samples(&self) -> &[Sample] {
         &self.0
     }
+
+    pub fn mut_samples(&mut self) -> &mut [Sample] {
+        &mut self.0
+    }
 }
 
 pub struct Sample {
@@ -34,7 +38,6 @@ pub trait Product {
     fn defline(&self) -> usize;
     fn payoffs(&self, path: &Scenario, result: &mut Vec<f64>);
 }
-
 
 pub trait Model: Clone {
     fn simulation_dimensions(&self) -> usize;
