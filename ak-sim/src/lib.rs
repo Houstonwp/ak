@@ -34,6 +34,7 @@ pub struct Sample {
 
 pub trait Product {
     fn payoff_labels(&self) -> Vec<String>;
+    fn payoff_count(&self) -> usize;
     fn timeline(&self) -> usize;
     fn defline(&self) -> usize;
     fn payoffs(&self, path: &Scenario, result: &mut Vec<f64>);

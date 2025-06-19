@@ -24,6 +24,9 @@ impl Product for DummyProduct {
     fn payoff_labels(&self) -> Vec<String> {
         vec!["dummy".into()]
     }
+    fn payoff_count(&self) -> usize {
+        1
+    }
     fn timeline(&self) -> usize {
         1
     }

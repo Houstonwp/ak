@@ -2,18 +2,13 @@ use crate::{Model, Product, Scenario};
 use ak_random::RNG;
 use rayon::prelude::*;
 
-pub fn simulate<P, M, R>(
-    prd: &P,
-    mdl: &M,
-    rng: &R,
-    paths: usize,
-) -> Vec<Vec<f64>>
+pub fn simulate<P, M, R>(prd: &P, mdl: &M, rng: &R, paths: usize) -> Vec<Vec<f64>>
 where
     P: Product + Sync,
     M: Model + Sync,
     R: RNG + Sync,
 {
-    let payoffs = prd.payoff_labels().len();
+    let payoffs = prd.payoff_count();
     let mut results = vec![vec![0.0; payoffs]; paths];
 
     mdl.init(prd.timeline(), prd.defline());
@@ -21,40 +16,35 @@ where
     let sim_dims = mdl.simulation_dimensions();
     let defline = prd.defline();
 
-    results
-        .par_iter_mut()
-        .enumerate()
-        .for_each_init(
-            || {
-                let mut local_rng = rng.clone();
-                local_rng.init(sim_dims);
-                (
-                    local_rng,
-                    vec![0.0f64; sim_dims],
-                    Scenario::new(defline),
-                )
-            },
-            |state, (i, result)| {
-                let (rng, gaussian_vec, path) = state;
-                rng.set_stream(i as u64);
-                rng.generate_gaussian(gaussian_vec);
-                mdl.generate_path(gaussian_vec, path);
-                prd.payoffs(path, result);
-            },
-        );
+    results.par_iter_mut().enumerate().for_each_init(
+        || {
+            let mut local_rng = rng.clone();
+            local_rng.init(sim_dims);
+            (local_rng, vec![0.0f64; sim_dims], Scenario::new(defline))
+        },
+        |state, (i, result)| {
+            let (rng, gaussian_vec, path) = state;
+            rng.set_stream(i as u64);
+            rng.generate_gaussian(gaussian_vec);
+            mdl.generate_path(gaussian_vec, path);
+            prd.payoffs(path, result);
+        },
+    );
     results
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ak_random::{mrg32k3a::Mrg32k3a, RNG};
+    use ak_random::{RNG, mrg32k3a::Mrg32k3a};
 
     #[derive(Clone)]
     struct DummyModel;
 
     impl Model for DummyModel {
-        fn simulation_dimensions(&self) -> usize { 1 }
+        fn simulation_dimensions(&self) -> usize {
+            1
+        }
         fn init(&self, _: usize, _: usize) {}
         fn generate_path(&self, gaussian_vec: &[f64], path: &mut Scenario) {
             path.0[0].numeraire = gaussian_vec[0];
@@ -65,9 +55,18 @@ mod tests {
     struct DummyProduct;
 
     impl Product for DummyProduct {
-        fn payoff_labels(&self) -> Vec<String> { vec!["dummy".into()] }
-        fn timeline(&self) -> usize { 1 }
-        fn defline(&self) -> usize { 1 }
+        fn payoff_labels(&self) -> Vec<String> {
+            vec!["dummy".into()]
+        }
+        fn payoff_count(&self) -> usize {
+            1
+        }
+        fn timeline(&self) -> usize {
+            1
+        }
+        fn defline(&self) -> usize {
+            1
+        }
         fn payoffs(&self, path: &Scenario, result: &mut Vec<f64>) {
             result[0] = path.samples()[0].numeraire;
         }
