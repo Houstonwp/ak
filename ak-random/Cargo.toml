@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 anyhow = { workspace = true }
+rand_core = { version = "0.9.3", features = ["std"] }

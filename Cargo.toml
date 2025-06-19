@@ -1,10 +1,11 @@
 [workspace]
 members = [
-    "ak-core",
-    "ak-contract",
-    "ak-cashflow",
-    "ak-repl",
-    "ak-cli", "ak-random",
+  "ak-core",
+  "ak-contract",
+  "ak-cashflow",
+  "ak-repl",
+  "ak-cli",
+  "ak-random",
 ]
 resolver = "3"
 
