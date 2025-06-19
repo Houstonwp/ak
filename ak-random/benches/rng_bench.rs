@@ -25,43 +25,43 @@ fn bench_std_rng(c: &mut Criterion) {
 }
 
 fn bench_parallel_u64(c: &mut Criterion) {
+    const TOTAL: usize = 10_000;
+    const BATCH: usize = 512;
     c.bench_function("mrg32k3a_parallel_u64", |b| {
         b.iter(|| {
-            let seeds = [1u64, 2, 3, 4];
-            let total: u64 = seeds
-                .par_iter()
-                .map(|&seed| {
+            let mut buf = vec![0u64; TOTAL];
+            buf.par_chunks_mut(BATCH)
+                .enumerate()
+                .for_each(|(stream, chunk)| {
                     let mut rng = Mrg32k3aCore::default();
-                    rng.set_seed(seed);
-                    let mut sum = 0u64;
-                    for _ in 0..10_000 {
-                        sum = sum.wrapping_add(rng.step_u64());
+                    rng.set_stream(stream as u64);
+                    for v in chunk {
+                        *v = rng.step_u64();
                     }
-                    sum
-                })
-                .sum();
-            black_box(total);
+                });
+            let sum: u64 = buf.iter().copied().sum();
+            black_box(sum);
         })
     });
 }
 
 fn bench_parallel_f64(c: &mut Criterion) {
+    const TOTAL: usize = 10_000;
+    const BATCH: usize = 512;
     c.bench_function("mrg32k3a_parallel_f64", |b| {
         b.iter(|| {
-            let seeds = [1u64, 2, 3, 4];
-            let total: f64 = seeds
-                .par_iter()
-                .map(|&seed| {
+            let mut buf = vec![0f64; TOTAL];
+            buf.par_chunks_mut(BATCH)
+                .enumerate()
+                .for_each(|(stream, chunk)| {
                     let mut rng = Mrg32k3aCore::default();
-                    rng.set_seed(seed);
-                    let mut sum = 0.0f64;
-                    for _ in 0..10_000 {
-                        sum += rng.step();
+                    rng.set_stream(stream as u64);
+                    for v in chunk {
+                        *v = rng.step();
                     }
-                    sum
-                })
-                .sum();
-            black_box(total);
+                });
+            let sum: f64 = buf.iter().copied().sum();
+            black_box(sum);
         })
     });
 }

@@ -127,12 +127,28 @@ impl Mrg32k3aCore {
         self.step_u64() as f64 * Self::NORM
     }
 
+    pub fn advance_substreams(&mut self, n: u64) {
+        for _ in 0..n {
+            self.apply_matrix(&A1P72, &A2P72);
+        }
+    }
+
     pub fn advance_substream(&mut self) {
-        self.apply_matrix(&A1P72, &A2P72);
+        self.advance_substreams(1);
+    }
+
+    pub fn advance_streams(&mut self, n: u64) {
+        for _ in 0..n {
+            self.apply_matrix(&A1P134, &A2P134);
+        }
     }
 
     pub fn advance_stream(&mut self) {
-        self.apply_matrix(&A1P134, &A2P134);
+        self.advance_streams(1);
+    }
+
+    pub fn set_stream(&mut self, n: u64) {
+        self.advance_streams(n);
     }
 }
 
@@ -204,12 +220,24 @@ impl SeedableRng for Mrg32k3a {
 }
 
 impl Mrg32k3a {
+    pub fn advance_substreams(&mut self, n: u64) {
+        self.core.core.advance_substreams(n);
+    }
+
     pub fn advance_substream(&mut self) {
-        self.core.core.advance_substream();
+        self.advance_substreams(1);
+    }
+
+    pub fn advance_streams(&mut self, n: u64) {
+        self.core.core.advance_streams(n);
     }
 
     pub fn advance_stream(&mut self) {
-        self.core.core.advance_stream();
+        self.advance_streams(1);
+    }
+
+    pub fn set_stream(&mut self, n: u64) {
+        self.core.core.set_stream(n);
     }
 }
 
@@ -287,6 +315,47 @@ mod tests {
             .map(|&s| {
                 let mut r = Mrg32k3aCore::default();
                 r.set_seed(s);
+                (0..128).map(|_| r.step_u64()).collect::<Vec<_>>()
+            })
+            .collect();
+
+        for (res, exp) in results.into_iter().zip(expected) {
+            assert_eq!(res, exp);
+        }
+    }
+
+    #[test]
+    fn set_stream_equivalent_to_advancing() {
+        let mut a = Mrg32k3aCore::default();
+        for _ in 0..3 {
+            a.advance_stream();
+        }
+
+        let mut b = Mrg32k3aCore::default();
+        b.set_stream(3);
+
+        for _ in 0..32 {
+            assert_eq!(a.step_u64(), b.step_u64());
+        }
+    }
+
+    #[test]
+    fn multithreaded_streams() {
+        let streams = rayon::current_num_threads() as u64;
+
+        let expected: Vec<Vec<u64>> = (0..streams)
+            .map(|s| {
+                let mut r = Mrg32k3aCore::default();
+                r.set_stream(s);
+                (0..128).map(|_| r.step_u64()).collect::<Vec<_>>()
+            })
+            .collect();
+
+        let results: Vec<Vec<u64>> = (0..streams)
+            .into_par_iter()
+            .map(|s| {
+                let mut r = Mrg32k3aCore::default();
+                r.set_stream(s);
                 (0..128).map(|_| r.step_u64()).collect::<Vec<_>>()
             })
             .collect();
