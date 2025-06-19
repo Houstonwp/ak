@@ -10,6 +10,7 @@ rand_core = { version = "0.9.3", features = ["std"] }
 [dev-dependencies]
 criterion = "0.5"
 rand = "0.8"
+rayon = "1"
 
 [[bench]]
 name = "rng_bench"

@@ -48,6 +48,7 @@ dependencies = [
  "criterion",
  "rand",
  "rand_core 0.9.3",
+ "rayon",
 ]
 
 [[package]]

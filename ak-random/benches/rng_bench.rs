@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ak_random::mrg32k3a::{Mrg32k3a, Mrg32k3aCore};
 use rand_core::{RngCore, SeedableRng};
+use rayon::prelude::*;
 
 fn bench_core_step_u64(c: &mut Criterion) {
     let mut rng = Mrg32k3aCore::default();
@@ -22,22 +23,18 @@ fn bench_parallel_u64(c: &mut Criterion) {
     c.bench_function("mrg32k3a_parallel_u64", |b| {
         b.iter(|| {
             let seeds = [1u64, 2, 3, 4];
-            let handles: Vec<_> = seeds
-                .iter()
+            let total: u64 = seeds
+                .par_iter()
                 .map(|&seed| {
-                    std::thread::spawn(move || {
-                        let mut rng = Mrg32k3aCore::default();
-                        rng.set_seed(seed);
-                        let mut sum = 0u64;
-                        for _ in 0..10_000 {
-                            sum = sum.wrapping_add(rng.step_u64());
-                        }
-                        sum
-                    })
+                    let mut rng = Mrg32k3aCore::default();
+                    rng.set_seed(seed);
+                    let mut sum = 0u64;
+                    for _ in 0..10_000 {
+                        sum = sum.wrapping_add(rng.step_u64());
+                    }
+                    sum
                 })
-                .collect();
-
-            let total: u64 = handles.into_iter().map(|h| h.join().unwrap()).sum();
+                .sum();
             black_box(total);
         })
     });
@@ -47,22 +44,18 @@ fn bench_parallel_f64(c: &mut Criterion) {
     c.bench_function("mrg32k3a_parallel_f64", |b| {
         b.iter(|| {
             let seeds = [1u64, 2, 3, 4];
-            let handles: Vec<_> = seeds
-                .iter()
+            let total: f64 = seeds
+                .par_iter()
                 .map(|&seed| {
-                    std::thread::spawn(move || {
-                        let mut rng = Mrg32k3aCore::default();
-                        rng.set_seed(seed);
-                        let mut sum = 0.0f64;
-                        for _ in 0..10_000 {
-                            sum += rng.step();
-                        }
-                        sum
-                    })
+                    let mut rng = Mrg32k3aCore::default();
+                    rng.set_seed(seed);
+                    let mut sum = 0.0f64;
+                    for _ in 0..10_000 {
+                        sum += rng.step();
+                    }
+                    sum
                 })
-                .collect();
-
-            let total: f64 = handles.into_iter().map(|h| h.join().unwrap()).sum();
+                .sum();
             black_box(total);
         })
     });

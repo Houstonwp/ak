@@ -213,8 +213,8 @@ impl Mrg32k3a {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
     use rand_core::RngCore;
+    use rayon::prelude::*;
 
     #[test]
     fn sequence_from_default_seed() {
@@ -277,19 +277,16 @@ mod tests {
             })
             .collect();
 
-        let handles: Vec<_> = seeds
-            .iter()
+        let results: Vec<Vec<u64>> = seeds
+            .par_iter()
             .map(|&s| {
-                thread::spawn(move || {
-                    let mut r = Mrg32k3aCore::default();
-                    r.set_seed(s);
-                    (0..128).map(|_| r.step_u64()).collect::<Vec<u64>>()
-                })
+                let mut r = Mrg32k3aCore::default();
+                r.set_seed(s);
+                (0..128).map(|_| r.step_u64()).collect::<Vec<_>>()
             })
             .collect();
 
-        for (h, exp) in handles.into_iter().zip(expected) {
-            let res = h.join().expect("thread panicked");
+        for (res, exp) in results.into_iter().zip(expected) {
             assert_eq!(res, exp);
         }
     }
