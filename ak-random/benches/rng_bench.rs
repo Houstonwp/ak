@@ -12,7 +12,7 @@ fn bench_core_step_u64(c: &mut Criterion) {
 }
 
 fn bench_block_next_u64(c: &mut Criterion) {
-    let mut rng = Mrg32k3a::from_seed(Default::default());
+    let mut rng = Mrg32k3a::from_seed([0u8; 8]);
     c.bench_function("mrg32k3a_next_u64", |b| {
         b.iter(|| black_box(rng.next_u64()))
     });
@@ -57,7 +57,7 @@ fn bench_parallel_f64(c: &mut Criterion) {
                     let mut rng = Mrg32k3aCore::default();
                     rng.set_stream(stream as u64);
                     for v in chunk {
-                        *v = rng.step();
+                        *v = rng.next_f64();
                     }
                 });
             let sum: f64 = buf.iter().copied().sum();
