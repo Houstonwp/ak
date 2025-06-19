@@ -268,6 +268,31 @@ impl Mrg32k3a {
     }
 }
 
+use crate::rng::RNG;
+use rand_core::RngCore;
+
+impl RNG for Mrg32k3a {
+    fn init(&mut self, _dimensions: usize) {}
+
+    fn generate_gaussian(&mut self, output: &mut [f64]) {
+        for val in output {
+            let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
+            if u >= 1.0 {
+                u = 1.0 - f64::EPSILON;
+            }
+            if u <= 0.0 {
+                u = f64::MIN_POSITIVE;
+            }
+            *val = crate::gaussian::approx_inverse_gaussian(u).unwrap();
+        }
+    }
+
+    fn set_stream(&mut self, stream: u64) {
+        self.core.core.set_stream(stream);
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,3 +417,4 @@ mod tests {
         }
     }
 }
+

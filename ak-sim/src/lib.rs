@@ -35,10 +35,6 @@ pub trait Product {
     fn payoffs(&self, path: &Scenario, result: &mut Vec<f64>);
 }
 
-pub trait RNG: Clone {
-    fn init(&self, dimensions: usize);
-    fn generate_gaussian(&self, output: &mut [f64]);
-}
 
 pub trait Model: Clone {
     fn simulation_dimensions(&self) -> usize;

@@ -62,6 +62,8 @@ dependencies = [
 name = "ak-sim"
 version = "0.1.0"
 dependencies = [
+ "ak-random",
+ "criterion",
  "rayon",
  "thiserror",
 ]
