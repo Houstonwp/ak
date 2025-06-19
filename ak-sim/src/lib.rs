@@ -1,5 +1,51 @@
 pub mod monte_carlo;
 
+pub struct Scenario(Vec<Sample>);
+
+impl Scenario {
+    pub fn new(defline: usize) -> Self {
+        Self(vec![Sample {
+            numeraire: 1.0,
+            forwards: vec![0.0; defline],
+            discounts: vec![0.0; defline],
+            libors: vec![0.0; defline],
+        }])
+    }
+
+    pub fn add_sample(&mut self, sample: Sample) {
+        self.0.push(sample);
+    }
+
+    pub fn samples(&self) -> &[Sample] {
+        &self.0
+    }
+}
+
+pub struct Sample {
+    pub numeraire: f64,
+    pub forwards: Vec<f64>,
+    pub discounts: Vec<f64>,
+    pub libors: Vec<f64>,
+}
+
+pub trait Product {
+    fn payoff_labels(&self) -> Vec<String>;
+    fn timeline(&self) -> usize;
+    fn defline(&self) -> usize;
+    fn payoffs(&self, path: &Scenario, result: &mut Vec<f64>);
+}
+
+pub trait RNG: Clone {
+    fn init(&self, dimensions: usize);
+    fn generate_gaussian(&self, output: &mut [f64]);
+}
+
+pub trait Model: Clone {
+    fn simulation_dimensions(&self) -> usize;
+    fn init(&self, timeline: usize, defline: usize);
+    fn generate_path(&self, gaussian_vec: &[f64], path: &mut Scenario);
+}
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
