@@ -53,8 +53,8 @@ impl Mrg32k3aCore {
 
     #[inline]
     pub fn stafford_mix_13(z: u64) -> u64 {
-        let z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9;
-        let z = (z ^ (z >> 27)) * 0x94D049BB133111EB;
+        let z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+        let z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
         (z >> 1) ^ (z >> 32)
     }
 
@@ -84,31 +84,37 @@ impl Mrg32k3aCore {
     }
 
     pub fn set_seed(&mut self, seed: u64) {
-        let mut seed = seed + 0x9e3779b97f4a7c15;
+        let mut seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s10 = Self::stafford_mix_13(seed) % Self::M1;
-        seed += 0x9e3779b97f4a7c15;
+        seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s11 = Self::stafford_mix_13(seed) % Self::M1;
-        seed += 0x9e3779b97f4a7c15;
+        seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s12 = Self::stafford_mix_13(seed) % Self::M1;
-        seed += 0x9e3779b97f4a7c15;
+        seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s20 = Self::stafford_mix_13(seed) % Self::M2;
-        seed += 0x9e3779b97f4a7c15;
+        seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s21 = Self::stafford_mix_13(seed) % Self::M2;
-        seed += 0x9e3779b97f4a7c15;
+        seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s22 = Self::stafford_mix_13(seed) % Self::M2;
     }
 
     #[inline]
     pub fn step_u64(&mut self) -> u64 {
-        let mut r = self.s12 - self.s22;
-        r -= Self::M1 * ((r - 1) >> 63);
+        let mut r = self.s12.wrapping_sub(self.s22);
+        r = r.wrapping_sub(Self::M1 * ((r.wrapping_sub(1)) >> 63));
 
-        let p = (Self::A12 * self.s11 - Self::A13 * self.s10 + Self::CORR1) % Self::M1;
+        let p = (Self::A12.wrapping_mul(self.s11)
+            .wrapping_sub(Self::A13.wrapping_mul(self.s10))
+            .wrapping_add(Self::CORR1))
+            % Self::M1;
         self.s10 = self.s11;
         self.s11 = self.s12;
         self.s12 = p;
 
-        let p = (Self::A21 * self.s21 - Self::A23 * self.s20 + Self::CORR2) % Self::M2;
+        let p = (Self::A21.wrapping_mul(self.s21)
+            .wrapping_sub(Self::A23.wrapping_mul(self.s20))
+            .wrapping_add(Self::CORR2))
+            % Self::M2;
         self.s20 = self.s21;
         self.s21 = self.s22;
         self.s22 = p;
@@ -202,5 +208,89 @@ impl Mrg32k3a {
 
     pub fn advance_stream(&mut self) {
         self.core.core.advance_stream();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+
+    #[test]
+    fn sequence_from_default_seed() {
+        let mut rng = Mrg32k3aCore::default();
+        let expected = [
+            18446744069414584529,
+            545508589,
+            545508589,
+            1729634130,
+            18446744067398777457,
+            18446744068605071855,
+            1174362367,
+            18446744067747663158,
+            893945877,
+            2017763182,
+        ];
+        for &e in &expected {
+            assert_eq!(rng.step_u64(), e);
+        }
+    }
+
+    #[test]
+    fn sequence_after_set_seed() {
+        let mut rng = Mrg32k3aCore::default();
+        rng.set_seed(1);
+        let expected = [
+            3950718346,
+            18446744065775893456,
+            2489117118,
+            2300407520,
+            18446744067822805725,
+        ];
+        for &e in &expected {
+            assert_eq!(rng.step_u64(), e);
+        }
+    }
+
+    #[test]
+    fn block_rng_matches_core() {
+        let mut core = Mrg32k3aCore::default();
+        let mut rng = Mrg32k3a { core: BlockRng64::new(Mrg32k3aCore::default()) };
+        for _ in 0..N * 2 {
+            assert_eq!(rng.next_u64(), core.step_u64());
+        }
+    }
+
+    /// Ensure running several RNG instances in parallel yields the same
+    /// sequences as generating them sequentially on a single thread.
+    #[test]
+    fn multithreaded_consistency() {
+        let seeds = [1u64, 2, 3, 4];
+        // Pre-compute the sequences produced by each seed on the current
+        // thread. These serve as the single-threaded reference results.
+        let expected: Vec<Vec<u64>> = seeds
+            .iter()
+            .map(|&s| {
+                let mut r = Mrg32k3aCore::default();
+                r.set_seed(s);
+                (0..128).map(|_| r.step_u64()).collect::<Vec<_>>()
+            })
+            .collect();
+
+        let handles: Vec<_> = seeds
+            .iter()
+            .map(|&s| {
+                thread::spawn(move || {
+                    let mut r = Mrg32k3aCore::default();
+                    r.set_seed(s);
+                    (0..128).map(|_| r.step_u64()).collect::<Vec<u64>>()
+                })
+            })
+            .collect();
+
+        for (h, exp) in handles.into_iter().zip(expected) {
+            let res = h.join().expect("thread panicked");
+            assert_eq!(res, exp);
+        }
     }
 }
