@@ -1,16 +1,21 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ak_random::mrg32k3a::{Mrg32k3a, Mrg32k3aCore};
+use criterion::{Criterion, criterion_group, criterion_main};
 use rand_core::{RngCore, SeedableRng};
 use rayon::prelude::*;
+use std::hint::black_box;
 
 fn bench_core_step_u64(c: &mut Criterion) {
     let mut rng = Mrg32k3aCore::default();
-    c.bench_function("mrg32k3a_core_step_u64", |b| b.iter(|| black_box(rng.step_u64())));
+    c.bench_function("mrg32k3a_core_step_u64", |b| {
+        b.iter(|| black_box(rng.step_u64()))
+    });
 }
 
 fn bench_block_next_u64(c: &mut Criterion) {
     let mut rng = Mrg32k3a::from_seed(Default::default());
-    c.bench_function("mrg32k3a_next_u64", |b| b.iter(|| black_box(rng.next_u64())));
+    c.bench_function("mrg32k3a_next_u64", |b| {
+        b.iter(|| black_box(rng.next_u64()))
+    });
 }
 
 fn bench_std_rng(c: &mut Criterion) {

@@ -61,9 +61,9 @@ impl Mrg32k3aCore {
         let mut res = [0u64; 3];
         for i in 0..3 {
             let mut total = 0u128;
-            for j in 0..3 {
+            (0..3).for_each(|j| {
                 total += (a[i][j] as u128 * s[j] as u128) % m as u128;
-            }
+            });
             res[i] = (total % m as u128) as u64;
         }
         s.copy_from_slice(&res);
@@ -102,7 +102,8 @@ impl Mrg32k3aCore {
         let mut r = self.s12.wrapping_sub(self.s22);
         r = r.wrapping_sub(Self::M1 * ((r.wrapping_sub(1)) >> 63));
 
-        let p = (Self::A12.wrapping_mul(self.s11)
+        let p = (Self::A12
+            .wrapping_mul(self.s11)
             .wrapping_sub(Self::A13.wrapping_mul(self.s10))
             .wrapping_add(Self::CORR1))
             % Self::M1;
@@ -110,7 +111,8 @@ impl Mrg32k3aCore {
         self.s11 = self.s12;
         self.s12 = p;
 
-        let p = (Self::A21.wrapping_mul(self.s21)
+        let p = (Self::A21
+            .wrapping_mul(self.s21)
             .wrapping_sub(Self::A23.wrapping_mul(self.s20))
             .wrapping_add(Self::CORR2))
             % Self::M2;
@@ -189,14 +191,15 @@ impl rand_core::RngCore for Mrg32k3a {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.core.fill_bytes(dest);
     }
-
 }
 
 impl SeedableRng for Mrg32k3a {
     type Seed = <Mrg32k3aCore as SeedableRng>::Seed;
 
     fn from_seed(seed: Self::Seed) -> Self {
-        Self { core: BlockRng64::from_seed(seed) }
+        Self {
+            core: BlockRng64::from_seed(seed),
+        }
     }
 }
 
@@ -255,7 +258,9 @@ mod tests {
     #[test]
     fn block_rng_matches_core() {
         let mut core = Mrg32k3aCore::default();
-        let mut rng = Mrg32k3a { core: BlockRng64::new(Mrg32k3aCore::default()) };
+        let mut rng = Mrg32k3a {
+            core: BlockRng64::new(Mrg32k3aCore::default()),
+        };
         for _ in 0..N * 2 {
             assert_eq!(rng.next_u64(), core.step_u64());
         }
