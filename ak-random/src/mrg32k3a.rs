@@ -2,6 +2,7 @@ use rand_core::{
     RngCore, SeedableRng,
     block::{BlockRng64, BlockRngCore},
 };
+use thiserror::Error;
 
 use crate::rng::RNG;
 
@@ -39,6 +40,20 @@ pub struct Mrg32k3aCore {
     s20: u64,
     s21: u64,
     s22: u64,
+}
+
+#[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
+pub enum Mrg32k3aError {
+    #[error(
+        "Invalid seed provided for Mrg32k3a expected a 64-bit unsigned integer greater than 0 and less than {M1}. Got {0}", M1 = Mrg32k3aCore::M1
+    )]
+    InvalidM1Seed(u64),
+    #[error(
+        "Invalid seed provided for Mrg32k3a expected a 64-bit unsigned integer greater than 0 and less than {M2}. Got {0}", M2 = Mrg32k3aCore::M2
+    )]
+    InvalidM2Seed(u64),
+    #[error("Invalid number of seeds provided for Mrg32k3a expected 6. Got {0}")]
+    InvalidSeedLength(u32),
 }
 
 impl Mrg32k3aCore {
@@ -97,6 +112,34 @@ impl Mrg32k3aCore {
         self.s21 = Self::stafford_mix_13(seed) % Self::M2;
         seed = seed.wrapping_add(0x9e3779b97f4a7c15);
         self.s22 = Self::stafford_mix_13(seed) % Self::M2;
+    }
+
+    pub fn set_seeds(&mut self, seeds: [u64; 6]) -> Result<(), Mrg32k3aError> {
+        if !(0 < seeds[0] && seeds[0] < Mrg32k3aCore::M1) {
+            return Err(Mrg32k3aError::InvalidM1Seed(seeds[0]));
+        }
+        if !(0 < seeds[1] && seeds[1] < Mrg32k3aCore::M1) {
+            return Err(Mrg32k3aError::InvalidM1Seed(seeds[1]));
+        }
+        if !(0 < seeds[2] && seeds[2] < Mrg32k3aCore::M1) {
+            return Err(Mrg32k3aError::InvalidM1Seed(seeds[2]));
+        }
+        if !(0 < seeds[3] && seeds[3] < Mrg32k3aCore::M2) {
+            return Err(Mrg32k3aError::InvalidM2Seed(seeds[3]));
+        }
+        if !(0 < seeds[4] && seeds[4] < Mrg32k3aCore::M2) {
+            return Err(Mrg32k3aError::InvalidM2Seed(seeds[4]));
+        }
+        if !(0 < seeds[5] && seeds[5] < Mrg32k3aCore::M2) {
+            return Err(Mrg32k3aError::InvalidM2Seed(seeds[5]));
+        }
+        self.s10 = seeds[0];
+        self.s11 = seeds[1];
+        self.s12 = seeds[2];
+        self.s20 = seeds[3];
+        self.s21 = seeds[4];
+        self.s22 = seeds[5];
+        Ok(())
     }
 
     #[inline]
