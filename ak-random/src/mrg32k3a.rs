@@ -86,6 +86,43 @@ impl Mrg32k3aCore {
         s.copy_from_slice(&res);
     }
 
+    fn mat_mul(m: u64, a: &[[u64; 3]; 3], b: &[[u64; 3]; 3]) -> [[u64; 3]; 3] {
+        let mut res = [[0u64; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                // Use a 128-bit accumulator to avoid overflow when summing
+                // three 64-bit products. The additional cost of these few
+                // u128 operations is tiny compared with the `O(log n)` speedup
+                // from binary exponentiation.
+                let mut total = 0u128;
+                for k in 0..3 {
+                    total += (a[i][k] as u128 * b[k][j] as u128) % m as u128;
+                }
+                res[i][j] = (total % m as u128) as u64;
+            }
+        }
+        res
+    }
+
+    fn mat_pow(m: u64, base: &[[u64; 3]; 3], exp: u64) -> [[u64; 3]; 3] {
+        let mut result = [[0u64; 3]; 3];
+        for i in 0..3 {
+            result[i][i] = 1;
+        }
+        let mut p = *base;
+        let mut e = exp;
+        // Exponentiation by squaring reduces the number of matrix
+        // multiplications from `O(n)` to `O(log n)`.
+        while e > 0 {
+            if e & 1 == 1 {
+                result = Self::mat_mul(m, &result, &p);
+            }
+            p = Self::mat_mul(m, &p, &p);
+            e >>= 1;
+        }
+        result
+    }
+
     fn apply_matrix(&mut self, a1: &[[u64; 3]; 3], a2: &[[u64; 3]; 3]) {
         let mut v1 = [self.s10, self.s11, self.s12];
         let mut v2 = [self.s20, self.s21, self.s22];
@@ -173,9 +210,12 @@ impl Mrg32k3aCore {
     }
 
     pub fn advance_substreams(&mut self, n: u64) {
-        for _ in 0..n {
-            self.apply_matrix(&A1P72, &A2P72);
+        if n == 0 {
+            return;
         }
+        let a1 = Self::mat_pow(Self::M1, &A1P72, n);
+        let a2 = Self::mat_pow(Self::M2, &A2P72, n);
+        self.apply_matrix(&a1, &a2);
     }
 
     pub fn advance_substream(&mut self) {
@@ -183,9 +223,12 @@ impl Mrg32k3aCore {
     }
 
     pub fn advance_streams(&mut self, n: u64) {
-        for _ in 0..n {
-            self.apply_matrix(&A1P134, &A2P134);
+        if n == 0 {
+            return;
         }
+        let a1 = Self::mat_pow(Self::M1, &A1P134, n);
+        let a2 = Self::mat_pow(Self::M2, &A2P134, n);
+        self.apply_matrix(&a1, &a2);
     }
 
     pub fn advance_stream(&mut self) {
