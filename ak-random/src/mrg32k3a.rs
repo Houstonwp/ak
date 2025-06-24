@@ -65,13 +65,18 @@ impl Mrg32k3aCore {
     const A23: u64 = 1_370_589;
     const CORR1: u64 = Self::M1 * Self::A13;
     const CORR2: u64 = Self::M2 * Self::A23;
-    const NORM: f64 = f64::from_bits(0x3DF0_0000_0D00_000B);
 
     #[inline]
     pub fn stafford_mix_13(z: u64) -> u64 {
         let z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
         let z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
         (z >> 1) ^ (z >> 32)
+    }
+
+    #[inline]
+    fn u64_to_f64(bits: u64) -> f64 {
+        let bits = bits >> (64 - 53);
+        f64::from_bits((0x3FFu64 << 52) | bits) - 1.0
     }
 
     fn mat_vec_mul(m: u64, a: &[[u64; 3]; 3], s: &mut [u64; 3]) {
@@ -169,7 +174,7 @@ impl Mrg32k3aCore {
 
     #[inline]
     pub fn next_f64(&mut self) -> f64 {
-        self.step_u64() as f64 * Self::NORM
+        Self::u64_to_f64(self.step_u64())
     }
 
     pub fn advance_substreams(&mut self, n: u64) {
@@ -350,11 +355,8 @@ impl RNG for Mrg32k3a {
         } else {
             self.cached_uniform.clear();
             for val in output {
-                let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
-                if u >= 1.0 {
-                    u = 1.0 - f64::EPSILON;
-                }
-                if u <= 0.0 {
+                let mut u = Mrg32k3aCore::u64_to_f64(self.core.next_u64());
+                if u == 0.0 {
                     u = f64::MIN_POSITIVE;
                 }
                 *val = u;
@@ -373,11 +375,8 @@ impl RNG for Mrg32k3a {
         } else {
             self.cached_gaussian.clear();
             for val in output {
-                let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
-                if u >= 1.0 {
-                    u = 1.0 - f64::EPSILON;
-                }
-                if u <= 0.0 {
+                let mut u = Mrg32k3aCore::u64_to_f64(self.core.next_u64());
+                if u == 0.0 {
                     u = f64::MIN_POSITIVE;
                 }
                 *val = crate::gaussian::approx_inverse_gaussian(u).unwrap();
