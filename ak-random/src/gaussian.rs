@@ -37,16 +37,24 @@ pub fn approx_inverse_gaussian(u: f64) -> Result<f64> {
     let y = u - 0.5;
     if y.abs() < 0.42 {
         let r = y * y;
-        Ok((A0 + y * (A1 + r * (A2 + r * A3)))
-            / (1.0 + r * (B0 + r * (B1 + r * (B2 + r * B3)))))
+        let num = A3.mul_add(r, A2).mul_add(r, A1).mul_add(y, A0);
+        let den = B3.mul_add(r, B2).mul_add(r, B1).mul_add(r, B0).mul_add(r, 1.0);
+        Ok(num / den)
     } else {
         let mut r = u;
         if y > 0.0 {
             r = 1.0 - u;
         }
         r = (-1.0 * r.ln()).ln();
-        let x = C0
-            + r * (C1 + r * (C2 + r * (C3 + r * (C4 + r * (C5 + r * (C6 + r * (C7 + r * C8)))))));
+        let x = C8
+            .mul_add(r, C7)
+            .mul_add(r, C6)
+            .mul_add(r, C5)
+            .mul_add(r, C4)
+            .mul_add(r, C3)
+            .mul_add(r, C2)
+            .mul_add(r, C1)
+            .mul_add(r, C0);
         Ok(if y < 0.0 { -x } else { x })
     }
 }

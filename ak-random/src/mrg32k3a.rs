@@ -74,18 +74,20 @@ impl Mrg32k3aCore {
         (z >> 1) ^ (z >> 32)
     }
 
+    #[inline(always)]
     fn mat_vec_mul(m: u64, a: &[[u64; 3]; 3], s: &mut [u64; 3]) {
         let mut res = [0u64; 3];
         for i in 0..3 {
             let mut total = 0u128;
-            (0..3).for_each(|j| {
-                total += (a[i][j] as u128 * s[j] as u128) % m as u128;
-            });
+            for j in 0..3 {
+                total += a[i][j] as u128 * s[j] as u128;
+            }
             res[i] = (total % m as u128) as u64;
         }
         s.copy_from_slice(&res);
     }
 
+    #[inline(always)]
     fn apply_matrix(&mut self, a1: &[[u64; 3]; 3], a2: &[[u64; 3]; 3]) {
         let mut v1 = [self.s10, self.s11, self.s12];
         let mut v2 = [self.s20, self.s21, self.s22];
@@ -142,7 +144,7 @@ impl Mrg32k3aCore {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn step_u64(&mut self) -> u64 {
         let mut r = self.s12.wrapping_sub(self.s22);
         r = r.wrapping_sub(Self::M1 * ((r.wrapping_sub(1)) >> 63));
