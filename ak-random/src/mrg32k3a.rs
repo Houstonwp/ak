@@ -2,6 +2,7 @@ use rand_core::{
     RngCore, SeedableRng,
     block::{BlockRng64, BlockRngCore},
 };
+use rand_distr::{Distribution, StandardNormal};
 use thiserror::Error;
 
 use crate::rng::RNG;
@@ -373,14 +374,8 @@ impl RNG for Mrg32k3a {
         } else {
             self.cached_gaussian.clear();
             for val in output {
-                let mut u = (self.core.next_u64() & 0xFFFF_FFFF) as f64 * Mrg32k3aCore::NORM;
-                if u >= 1.0 {
-                    u = 1.0 - f64::EPSILON;
-                }
-                if u <= 0.0 {
-                    u = f64::MIN_POSITIVE;
-                }
-                *val = crate::gaussian::approx_inverse_gaussian(u).unwrap();
+                let sample: f64 = StandardNormal.sample(self);
+                *val = sample;
                 self.cached_gaussian.push(*val);
             }
             self.antithetic = true;
