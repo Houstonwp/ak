@@ -1,30 +1,35 @@
 # Overview
 
-This repository uses a Cargo workspace to collect all crates that make up the project. Below is a recommended layout for organizing the existing code and upcoming components such as an interactive REPL, scripting language, terminal UI, utilities, product definitions, random number generator and financial models.
+The `ak` project is a collection of Rust crates for modelling and simulating financial contracts. Each crate in the workspace focuses on a specific concern, ranging from low level date handling to Monte Carlo simulation and command line tools.
 
-## Proposed directory structure
+## Workspace structure
 
 ```
 ak/
-├── Cargo.toml             # Workspace definition
-├── README.md              # Project overview and workspace layout (this file)
-├── ak-core/               # Low level utilities shared across crates
-├── ak-contract/           # Domain specific language for contracts
-├── ak-cashflow/           # Cash‑flow calculations and primitives
-├── ak-repl/               # Interactive REPL (binary crate)
-├── ak-scripting/          # Scripting language runtime & compiler
-├── ak-tui/                # Text user interface (binary crate)
-├── ak-products/           # Product definitions
-├── ak-random/             # Random number generator utilities
-├── ak-models/             # Pricing and risk models
-└── ak-cli/                # Main command line application
+├── Cargo.toml            # Workspace configuration
+├── README.md             # Project overview (this file)
+├── ak-core/              # Shared date and schedule utilities
+├── ak-contract/          # DSL and simulator for contracts
+├── ak-cashflow/          # Cash-flow calculations and primitives
+├── ak-random/            # Random number generation utilities
+├── ak-sim/               # Monte Carlo simulation framework
+├── ak-repl/              # Interactive REPL for experimenting with contracts
+└── ak-cli/               # Command line application
 ```
 
-Each directory represents a separate crate. Libraries that are depended upon by multiple crates (e.g. `ak-core`, `ak-random`) should be library crates. Components such as the REPL and TUI are binary crates so they produce executables.
+## Crate summaries
+
+- **ak-core** – foundational types such as calendars, day-count conventions, compounding and scheduling helpers.
+- **ak-contract** – parser and runtime for a domain specific language describing financial contracts.
+- **ak-cashflow** – helpers for building and aggregating cash-flows.
+- **ak-random** – utilities for deterministic and parallel-friendly random number generation.
+- **ak-sim** – Monte Carlo engine built on `ak-random` for running simulations.
+- **ak-repl** – interactive Read-Eval-Print loop powered by `ak-contract`.
+- **ak-cli** – entry point binary that ties the crates together.
 
 ### Workspace configuration
 
-The root `Cargo.toml` lists each crate under `[workspace.members]`. Shared dependencies can be specified under `[workspace.dependencies]` so that every crate in the workspace uses the same version:
+The root `Cargo.toml` registers all crates as members of a single workspace and defines shared dependencies:
 
 ```toml
 [workspace]
@@ -32,19 +37,19 @@ members = [
     "ak-core",
     "ak-contract",
     "ak-cashflow",
-    "ak-random",
-    "ak-products",
-    "ak-models",
-    "ak-scripting",
     "ak-repl",
-    "ak-tui",
     "ak-cli",
+    "ak-random",
+    "ak-sim",
 ]
 resolver = "3"
 
 [workspace.dependencies]
-jiff = "0.2.14"
+jiff = "0.2.15"
+anyhow = "1.0.98"
+rayon = "1.10.0"
+thiserror = "2.0"
 ```
 
-This structure keeps the workspace modular and makes it clear which crates provide reusable utilities versus binary applications.
+This layout keeps the workspace modular and makes it clear which crates provide reusable libraries versus binaries.
 
