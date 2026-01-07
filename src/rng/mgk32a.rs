@@ -46,12 +46,7 @@ impl Mgk32a {
     #[inline]
     pub fn state(&self) -> [u64; 6] {
         [
-            self.s1[0],
-            self.s1[1],
-            self.s1[2],
-            self.s2[0],
-            self.s2[1],
-            self.s2[2],
+            self.s1[0], self.s1[1], self.s1[2], self.s2[0], self.s2[1], self.s2[2],
         ]
     }
 
@@ -78,10 +73,16 @@ impl Mgk32a {
 impl RngCore for Mgk32a {
     #[inline]
     fn next_u32(&mut self) -> u32 {
-        let x = mod_m((A12 as i128) * (self.s1[1] as i128) - (A13N as i128) * (self.s1[2] as i128), M1);
+        let x = mod_m(
+            (A12 as i128) * (self.s1[1] as i128) - (A13N as i128) * (self.s1[2] as i128),
+            M1,
+        );
         self.s1 = [x, self.s1[0], self.s1[1]];
 
-        let y = mod_m((A21 as i128) * (self.s2[0] as i128) - (A23N as i128) * (self.s2[2] as i128), M2);
+        let y = mod_m(
+            (A21 as i128) * (self.s2[0] as i128) - (A23N as i128) * (self.s2[2] as i128),
+            M2,
+        );
         self.s2 = [y, self.s2[0], self.s2[1]];
 
         let u = if x > y { x - y } else { x + M1 - y };
@@ -179,17 +180,26 @@ impl Matrix3 {
         let m = modulus as u128;
         let mul = |a: u64, b: u64| (a as u128) * (b as u128) % m;
 
-        let a00 = (mul(self.a00, other.a00) + mul(self.a01, other.a10) + mul(self.a02, other.a20)) % m;
-        let a01 = (mul(self.a00, other.a01) + mul(self.a01, other.a11) + mul(self.a02, other.a21)) % m;
-        let a02 = (mul(self.a00, other.a02) + mul(self.a01, other.a12) + mul(self.a02, other.a22)) % m;
+        let a00 =
+            (mul(self.a00, other.a00) + mul(self.a01, other.a10) + mul(self.a02, other.a20)) % m;
+        let a01 =
+            (mul(self.a00, other.a01) + mul(self.a01, other.a11) + mul(self.a02, other.a21)) % m;
+        let a02 =
+            (mul(self.a00, other.a02) + mul(self.a01, other.a12) + mul(self.a02, other.a22)) % m;
 
-        let a10 = (mul(self.a10, other.a00) + mul(self.a11, other.a10) + mul(self.a12, other.a20)) % m;
-        let a11 = (mul(self.a10, other.a01) + mul(self.a11, other.a11) + mul(self.a12, other.a21)) % m;
-        let a12 = (mul(self.a10, other.a02) + mul(self.a11, other.a12) + mul(self.a12, other.a22)) % m;
+        let a10 =
+            (mul(self.a10, other.a00) + mul(self.a11, other.a10) + mul(self.a12, other.a20)) % m;
+        let a11 =
+            (mul(self.a10, other.a01) + mul(self.a11, other.a11) + mul(self.a12, other.a21)) % m;
+        let a12 =
+            (mul(self.a10, other.a02) + mul(self.a11, other.a12) + mul(self.a12, other.a22)) % m;
 
-        let a20 = (mul(self.a20, other.a00) + mul(self.a21, other.a10) + mul(self.a22, other.a20)) % m;
-        let a21 = (mul(self.a20, other.a01) + mul(self.a21, other.a11) + mul(self.a22, other.a21)) % m;
-        let a22 = (mul(self.a20, other.a02) + mul(self.a21, other.a12) + mul(self.a22, other.a22)) % m;
+        let a20 =
+            (mul(self.a20, other.a00) + mul(self.a21, other.a10) + mul(self.a22, other.a20)) % m;
+        let a21 =
+            (mul(self.a20, other.a01) + mul(self.a21, other.a11) + mul(self.a22, other.a21)) % m;
+        let a22 =
+            (mul(self.a20, other.a02) + mul(self.a21, other.a12) + mul(self.a22, other.a22)) % m;
 
         Self {
             a00: a00 as u64,
@@ -248,7 +258,13 @@ mod tests {
     #[test]
     fn mgk32a_known_sequence() {
         let mut rng = Mgk32a::new([12345; 6]).unwrap();
-        let expected = [545_508_589, 1_368_065_410, 1_327_943_761, 3_546_985_096, 951_893_194];
+        let expected = [
+            545_508_589,
+            1_368_065_410,
+            1_327_943_761,
+            3_546_985_096,
+            951_893_194,
+        ];
         let mut actual = [0u32; 5];
         for v in &mut actual {
             *v = rng.next_u32();

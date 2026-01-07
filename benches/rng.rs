@@ -1,7 +1,7 @@
+use ak::rng::RngCore;
 use ak::rng::mgk32a::Mgk32a;
 use ak::rng::sobol::Sobol;
-use ak::rng::RngCore;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 fn bench_mgk32a_next_u32(c: &mut Criterion) {
     c.bench_function("mgk32a_next_u32", |b| {
@@ -23,5 +23,9 @@ fn bench_sobol_dim1_next_point(c: &mut Criterion) {
     });
 }
 
-criterion_group!(rng_benches, bench_mgk32a_next_u32, bench_sobol_dim1_next_point);
+criterion_group!(
+    rng_benches,
+    bench_mgk32a_next_u32,
+    bench_sobol_dim1_next_point
+);
 criterion_main!(rng_benches);
