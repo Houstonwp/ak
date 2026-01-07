@@ -1,4 +1,4 @@
-use ak::{generate_cashflow_dates, Date, Frequency};
+use ak::{Date, Frequency, generate_cashflow_dates};
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 fn bench_cashflow_dates(c: &mut Criterion) {
@@ -15,8 +15,9 @@ fn bench_cashflow_dates(c: &mut Criterion) {
 
     c.bench_function("cashflow_dates_weekly_2600", |b| {
         b.iter(|| {
-            let dates = generate_cashflow_dates(black_box(start), black_box(2600), Frequency::Weekly)
-                .expect("date generation");
+            let dates =
+                generate_cashflow_dates(black_box(start), black_box(2600), Frequency::Weekly)
+                    .expect("date generation");
             black_box(dates.len());
         });
     });

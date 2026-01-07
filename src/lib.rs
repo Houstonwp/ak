@@ -2,4 +2,4 @@ mod date;
 
 pub mod rng;
 
-pub use date::{generate_cashflow_dates, days_in_month, is_leap_year, Date, DateError, Frequency};
+pub use date::{Date, DateError, Frequency, days_in_month, generate_cashflow_dates, is_leap_year};
