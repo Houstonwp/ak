@@ -14,6 +14,24 @@ pub enum Frequency {
 
 pub type DateError = Error;
 
+/// Returns the cashflow date at a given period index from the start date.
+///
+/// Period index 0 is the start date. Periods advance using calendar-aware
+/// arithmetic for the specified frequency (monthly, quarterly, etc.), so end-of-month
+/// alignment is preserved by the underlying date library.
+pub fn cashflow_date_at(start: Date, index: usize, frequency: Frequency) -> Result<Date, Error> {
+    let offset = index as i64;
+    let span = match frequency {
+        Frequency::Daily => offset.days(),
+        Frequency::Weekly => offset.weeks(),
+        Frequency::Monthly => offset.months(),
+        Frequency::Quarterly => (offset * 3).months(),
+        Frequency::SemiAnnual => (offset * 6).months(),
+        Frequency::Annual => (offset * 12).months(),
+    };
+    start.checked_add(span)
+}
+
 pub fn generate_cashflow_dates(
     start: Date,
     periods: usize,
@@ -21,16 +39,7 @@ pub fn generate_cashflow_dates(
 ) -> Result<Vec<Date>, Error> {
     let mut dates = Vec::with_capacity(periods);
     for i in 0..periods {
-        let offset = i as i64;
-        let span = match frequency {
-            Frequency::Daily => offset.days(),
-            Frequency::Weekly => offset.weeks(),
-            Frequency::Monthly => offset.months(),
-            Frequency::Quarterly => (offset * 3).months(),
-            Frequency::SemiAnnual => (offset * 6).months(),
-            Frequency::Annual => (offset * 12).months(),
-        };
-        dates.push(start.checked_add(span)?);
+        dates.push(cashflow_date_at(start, i, frequency)?);
     }
     Ok(dates)
 }
