@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
+use crate::{Date, DateError, Frequency};
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Amount(i64);
 
@@ -65,13 +67,29 @@ pub enum CashflowKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Cashflow {
-    pub time: u32,
+    pub time: Date,
     pub amount: Amount,
     pub kind: CashflowKind,
 }
 
 impl Cashflow {
-    pub const fn new(time: u32, amount: Amount, kind: CashflowKind) -> Self {
+    pub fn new(time: Date, amount: Amount, kind: CashflowKind) -> Self {
         Self { time, amount, kind }
+    }
+
+    /// Creates a cashflow at a projection period derived from the start date.
+    ///
+    /// Period index 0 is the start date. Periods advance using the shared date utility's
+    /// calendar rules for the given frequency (e.g. monthly uses month arithmetic and
+    /// preserves end-of-month where applicable).
+    pub fn from_period(
+        start: Date,
+        index: usize,
+        frequency: Frequency,
+        amount: Amount,
+        kind: CashflowKind,
+    ) -> Result<Self, DateError> {
+        let time = crate::cashflow_date_at(start, index, frequency)?;
+        Ok(Self { time, amount, kind })
     }
 }
