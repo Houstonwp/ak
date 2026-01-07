@@ -12,3 +12,7 @@ criterion = "0.5.1"
 [[bench]]
 name = "date_bench"
 harness = false
+
+[[bench]]
+name = "rng"
+harness = false
