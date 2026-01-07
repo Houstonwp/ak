@@ -69,7 +69,7 @@ impl Sobol {
         Ok(())
     }
 
-    pub fn next(&mut self) -> Result<Vec<f64>, SobolError> {
+    pub fn next_vec(&mut self) -> Result<Vec<f64>, SobolError> {
         let mut out = vec![0.0f64; self.dim];
         self.next_point(&mut out)?;
         Ok(out)
@@ -110,8 +110,8 @@ fn u32_to_unit_f64(value: u32) -> f64 {
 
 fn default_directions_dim1() -> Vec<[u32; 32]> {
     let mut v = [0u32; 32];
-    for i in 0..32 {
-        v[i] = 1u32 << (31 - i);
+    for (i, value) in v.iter_mut().enumerate() {
+        *value = 1u32 << (31 - i);
     }
     vec![v]
 }
@@ -125,7 +125,7 @@ mod tests {
         let mut sobol = Sobol::new(1).unwrap();
         let expected = [0.0, 0.5, 0.75, 0.25, 0.375, 0.875];
         for &value in &expected {
-            let point = sobol.next().unwrap();
+            let point = sobol.next_vec().unwrap();
             assert_eq!(point.len(), 1);
             assert_eq!(point[0], value);
         }
@@ -135,7 +135,7 @@ mod tests {
     fn sobol_seek_matches_expected_point() {
         let mut sobol = Sobol::new(1).unwrap();
         sobol.seek(4).unwrap();
-        let point = sobol.next().unwrap();
+        let point = sobol.next_vec().unwrap();
         assert_eq!(point[0], 0.375);
     }
 }
