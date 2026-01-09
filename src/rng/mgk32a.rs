@@ -284,4 +284,41 @@ mod tests {
         assert_eq!(advanced.state(), iterated.state());
         assert_eq!(advanced.next_u32(), iterated.next_u32());
     }
+
+    #[test]
+    fn mgk32a_rejects_invalid_seed() {
+        assert!(Mgk32a::new([0; 6]).is_err());
+    }
+
+    #[test]
+    fn mgk32a_from_seed64_produces_valid_state() {
+        let rng = Mgk32a::from_seed64(42);
+        let state = rng.state();
+        for (i, &value) in state.iter().enumerate() {
+            let modulus = if i < 3 { M1 } else { M2 };
+            assert!((1..modulus).contains(&value));
+        }
+    }
+
+    #[test]
+    fn mgk32a_next_f64_stays_in_unit_interval() {
+        let mut rng = Mgk32a::new([1, 2, 3, 4, 5, 6]).unwrap();
+        for _ in 0..10 {
+            let value = rng.next_f64();
+            assert!(value >= 0.0);
+            assert!(value < 1.0);
+        }
+    }
+
+    #[test]
+    fn mgk32a_for_stream_matches_manual_advance() {
+        let seed = [7, 11, 13, 17, 19, 23];
+        let stream = 2u128;
+        let stride = 128u128;
+        let mut manual = Mgk32a::new(seed).unwrap();
+        manual.advance(stream * stride);
+
+        let derived = Mgk32a::for_stream(seed, stream, stride).unwrap();
+        assert_eq!(manual.state(), derived.state());
+    }
 }

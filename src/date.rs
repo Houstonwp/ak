@@ -118,6 +118,46 @@ mod tests {
     }
 
     #[test]
+    fn cashflow_date_supports_all_frequencies() -> Result<(), DateError> {
+        let start = Date::new(2023, 1, 1)?;
+        assert_eq!(
+            cashflow_date_at(start, 1, Frequency::Daily)?,
+            Date::new(2023, 1, 2)?
+        );
+        assert_eq!(
+            cashflow_date_at(start, 1, Frequency::Quarterly)?,
+            Date::new(2023, 4, 1)?
+        );
+        assert_eq!(
+            cashflow_date_at(start, 1, Frequency::SemiAnnual)?,
+            Date::new(2023, 7, 1)?
+        );
+        assert_eq!(
+            cashflow_date_at(start, 1, Frequency::Annual)?,
+            Date::new(2024, 1, 1)?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn generate_cashflow_dates_allows_zero_periods() -> Result<(), DateError> {
+        let start = Date::new(2023, 1, 1)?;
+        let dates = generate_cashflow_dates(start, 0, Frequency::Monthly)?;
+        assert!(dates.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn leap_year_helpers_match_calendar_rules() -> Result<(), DateError> {
+        assert!(is_leap_year(2024)?);
+        assert!(!is_leap_year(2023)?);
+        assert_eq!(days_in_month(2023, 2)?, 28);
+        assert_eq!(days_in_month(2024, 2)?, 29);
+        assert_eq!(days_in_month(2023, 4)?, 30);
+        Ok(())
+    }
+
+    #[test]
     #[cfg(target_pointer_width = "64")]
     fn cashflow_date_rejects_large_index() -> Result<(), DateError> {
         let start = Date::new(2023, 1, 1)?;
