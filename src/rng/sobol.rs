@@ -138,4 +138,45 @@ mod tests {
         let point = sobol.next_vec().unwrap();
         assert_eq!(point[0], 0.375);
     }
+
+    #[test]
+    fn sobol_reports_dimension_and_index() {
+        let mut sobol = Sobol::new(1).unwrap();
+        assert_eq!(sobol.dimension(), 1);
+        assert_eq!(sobol.index(), 0);
+        sobol.next_vec().unwrap();
+        assert_eq!(sobol.index(), 1);
+    }
+
+    #[test]
+    fn sobol_reset_clears_state() {
+        let mut sobol = Sobol::new(1).unwrap();
+        sobol.advance(3).unwrap();
+        sobol.reset();
+        assert_eq!(sobol.index(), 0);
+        let point = sobol.next_vec().unwrap();
+        assert_eq!(point[0], 0.0);
+    }
+
+    #[test]
+    fn sobol_rejects_invalid_inputs() {
+        assert!(Sobol::new(0).is_err());
+        assert!(Sobol::new(2).is_err());
+        assert!(Sobol::with_directions(Vec::new()).is_err());
+    }
+
+    #[test]
+    fn sobol_rejects_dimension_mismatch() {
+        let mut sobol = Sobol::new(1).unwrap();
+        let mut out = [0.0f64; 2];
+        assert!(sobol.next_point(&mut out).is_err());
+    }
+
+    #[test]
+    fn sobol_rejects_out_of_range_seek_and_advance() {
+        let mut sobol = Sobol::new(1).unwrap();
+        let too_large = 1u64 << 32;
+        assert!(sobol.seek(too_large).is_err());
+        assert!(sobol.advance(too_large).is_err());
+    }
 }

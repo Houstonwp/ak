@@ -93,3 +93,47 @@ impl Cashflow {
         Ok(Self { time, amount, kind })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn amount_arithmetic_behaves_as_expected() {
+        let mut amount = Amount::from_cents(100);
+        amount += Amount::from_cents(50);
+        assert_eq!(amount, Amount::from_cents(150));
+
+        amount -= Amount::from_cents(20);
+        assert_eq!(amount.cents(), 130);
+
+        let total = amount + Amount::from_cents(70);
+        assert_eq!(total, Amount::from_cents(200));
+
+        let diff = total - Amount::from_cents(25);
+        assert_eq!(diff, Amount::from_cents(175));
+
+        let negated = -diff;
+        assert_eq!(negated, Amount::from_cents(-175));
+
+        assert_eq!(Amount::zero(), Amount::from_cents(0));
+    }
+
+    #[test]
+    fn cashflow_construction_helpers_match_inputs() -> Result<(), DateError> {
+        let date = Date::new(2024, 6, 15)?;
+        let amount = Amount::from_cents(12_345);
+        let kind = CashflowKind::Premium;
+
+        let flow = Cashflow::new(date, amount, kind);
+        assert_eq!(flow.time, date);
+        assert_eq!(flow.amount, amount);
+        assert_eq!(flow.kind, kind);
+
+        let from_period = Cashflow::from_period(date, 2, Frequency::Monthly, amount, kind)?;
+        assert_eq!(from_period.amount, amount);
+        assert_eq!(from_period.kind, kind);
+        assert_eq!(from_period.time, Date::new(2024, 8, 15)?);
+        Ok(())
+    }
+}
