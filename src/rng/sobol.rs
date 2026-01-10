@@ -1,3 +1,5 @@
+use crate::rng::{BlockSplit, JumpAhead};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SobolError;
 
@@ -103,6 +105,32 @@ impl Sobol {
     }
 }
 
+impl JumpAhead for Sobol {
+    type Error = SobolError;
+
+    fn advance(&mut self, delta: u128) -> Result<(), Self::Error> {
+        if delta > u64::MAX as u128 {
+            return Err(SobolError);
+        }
+        Sobol::advance(self, delta as u64)
+    }
+}
+
+impl BlockSplit for Sobol {
+    type Seed = Vec<[u32; 32]>;
+    type Error = SobolError;
+
+    fn for_stream(seed: Self::Seed, stream: u128, stride: u128) -> Result<Self, Self::Error> {
+        let mut sobol = Sobol::with_directions(seed)?;
+        let offset = stream.saturating_mul(stride);
+        if offset > u64::MAX as u128 {
+            return Err(SobolError);
+        }
+        sobol.seek(offset as u64)?;
+        Ok(sobol)
+    }
+}
+
 #[inline]
 fn u32_to_unit_f64(value: u32) -> f64 {
     (value as f64) / (u32::MAX as f64 + 1.0)
@@ -178,5 +206,40 @@ mod tests {
         let too_large = 1u64 << 32;
         assert!(sobol.seek(too_large).is_err());
         assert!(sobol.advance(too_large).is_err());
+    }
+
+    #[test]
+    fn sobol_advance_matches_iteration() {
+        let mut advanced = Sobol::new(1).unwrap();
+        let mut iterated = Sobol::new(1).unwrap();
+        advanced.advance(5).unwrap();
+        for _ in 0..5 {
+            iterated.next_vec().unwrap();
+        }
+        assert_eq!(advanced.index(), iterated.index());
+        assert_eq!(advanced.next_vec().unwrap(), iterated.next_vec().unwrap());
+    }
+
+    #[test]
+    fn sobol_block_splitting_aligns_streams() {
+        let seed = default_directions_dim1();
+        let stride = 8u128;
+        let mut base = Sobol::for_stream(seed.clone(), 0, stride).unwrap();
+        let mut split = Sobol::for_stream(seed, 1, stride).unwrap();
+        for _ in 0..stride {
+            base.next_vec().unwrap();
+        }
+        assert_eq!(base.index(), split.index());
+        assert_eq!(base.next_vec().unwrap(), split.next_vec().unwrap());
+    }
+
+    #[test]
+    fn sobol_same_seed_is_deterministic() {
+        let seed = default_directions_dim1();
+        let mut a = Sobol::with_directions(seed.clone()).unwrap();
+        let mut b = Sobol::with_directions(seed).unwrap();
+        for _ in 0..6 {
+            assert_eq!(a.next_vec().unwrap(), b.next_vec().unwrap());
+        }
     }
 }

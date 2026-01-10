@@ -12,3 +12,9 @@
 - **TDD-driven development**: tests guide design and ensure correctness.
 - **Benchmarking**: performance is continuously measured and validated.
 - **Low-level optimization**: careful memory layout, SIMD utilization, and parallelization are used where they matter most.
+
+## Core Modules
+
+- **product**: trait-based product definitions (states, cashflow kinds, required data layout).
+- **rng**: deterministic random and quasi-random streams with jump-ahead and block splitting.
+- **model**: trait-based projection engines that transform products into state-indexed cashflows.

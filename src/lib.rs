@@ -1,5 +1,6 @@
 mod date;
 
+pub mod model;
 pub mod product;
 pub mod rng;
 
