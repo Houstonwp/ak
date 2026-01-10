@@ -17,6 +17,9 @@ pub trait BlockSplit: Sized {
 }
 
 /// Core 32-bit RNG interface.
+///
+/// Determinism: given the same internal state, implementations must return the
+/// same sequence of values.
 pub trait RngCore {
     fn next_u32(&mut self) -> u32;
 

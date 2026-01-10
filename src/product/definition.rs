@@ -31,6 +31,9 @@ impl ProductDefinition {
 }
 
 /// Product interface describing cashflow kinds, states, and required data.
+///
+/// Determinism: given identical inputs and an RNG stream in the same state,
+/// implementations must produce identical outputs.
 pub trait Product {
     /// Returns the fixed definition of the product's dimensions.
     fn definition(&self) -> &ProductDefinition;
@@ -39,6 +42,8 @@ pub trait Product {
     fn initial_state(&self) -> ProductState;
 
     /// Generates required data into the provided buffer.
+    ///
+    /// Determinism: output must be fully determined by inputs and the RNG stream.
     fn generate_required_data(
         &self,
         time_index: usize,
@@ -50,6 +55,7 @@ pub trait Product {
     /// Writes cashflows for the current state into the provided buffer.
     ///
     /// The output slice length must match `definition().n_kinds`.
+    /// Determinism: output must be fully determined by inputs.
     fn cashflows(
         &self,
         time_index: usize,
@@ -59,6 +65,8 @@ pub trait Product {
     );
 
     /// Computes the next state after applying transitions.
+    ///
+    /// Determinism: output must be fully determined by inputs and the RNG stream.
     fn next_state(
         &self,
         time_index: usize,

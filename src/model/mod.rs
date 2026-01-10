@@ -12,6 +12,9 @@ pub struct ModelConfig {
 }
 
 /// Model interface to transform products into state-indexed cashflows.
+///
+/// Determinism: with identical inputs and an RNG stream in the same state,
+/// implementations must produce identical outputs in the provided buffers.
 pub trait Model {
     fn run(
         &self,
