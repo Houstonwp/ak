@@ -1,4 +1,6 @@
-use crate::rng::RngCore;
+use std::convert::Infallible;
+
+use crate::rng::{BlockSplit, JumpAhead, RngCore};
 
 const M1: u64 = 4_294_967_087;
 const M2: u64 = 4_294_944_443;
@@ -87,6 +89,24 @@ impl RngCore for Mgk32a {
 
         let u = if x > y { x - y } else { x + M1 - y };
         u as u32
+    }
+}
+
+impl JumpAhead for Mgk32a {
+    type Error = Infallible;
+
+    fn advance(&mut self, delta: u128) -> Result<(), Self::Error> {
+        Mgk32a::advance(self, delta);
+        Ok(())
+    }
+}
+
+impl BlockSplit for Mgk32a {
+    type Seed = [u64; 6];
+    type Error = SeedError;
+
+    fn for_stream(seed: Self::Seed, stream: u128, stride: u128) -> Result<Self, Self::Error> {
+        Mgk32a::for_stream(seed, stream, stride)
     }
 }
 
@@ -320,5 +340,27 @@ mod tests {
 
         let derived = Mgk32a::for_stream(seed, stream, stride).unwrap();
         assert_eq!(manual.state(), derived.state());
+    }
+
+    #[test]
+    fn mgk32a_same_seed_is_deterministic() {
+        let mut a = Mgk32a::from_seed64(123);
+        let mut b = Mgk32a::from_seed64(123);
+        for _ in 0..16 {
+            assert_eq!(a.next_u32(), b.next_u32());
+        }
+    }
+
+    #[test]
+    fn mgk32a_block_splitting_aligns_streams() {
+        let seed = [5, 7, 11, 13, 17, 19];
+        let stride = 32u128;
+        let mut base = Mgk32a::for_stream(seed, 0, stride).unwrap();
+        let split = Mgk32a::for_stream(seed, 1, stride).unwrap();
+
+        for _ in 0..stride {
+            base.next_u32();
+        }
+        assert_eq!(base.state(), split.state());
     }
 }

@@ -1,6 +1,25 @@
 pub mod mgk32a;
 pub mod sobol;
 
+/// Deterministic jump-ahead for reproducible streams.
+pub trait JumpAhead {
+    type Error;
+
+    fn advance(&mut self, delta: u128) -> Result<(), Self::Error>;
+}
+
+/// Block splitting via jump-ahead for parallel stream construction.
+pub trait BlockSplit: Sized {
+    type Seed;
+    type Error;
+
+    fn for_stream(seed: Self::Seed, stream: u128, stride: u128) -> Result<Self, Self::Error>;
+}
+
+/// Core 32-bit RNG interface.
+///
+/// Determinism: given the same internal state, implementations must return the
+/// same sequence of values.
 pub trait RngCore {
     fn next_u32(&mut self) -> u32;
 
